@@ -1,7 +1,7 @@
 const fs = require("fs");
 
 let knownSites = [
-  "https://example.com", // replace with ur test site
+  "https://ternbook.neocities.org", // replace with ur test site
 ];
 
 let visited = new Set();

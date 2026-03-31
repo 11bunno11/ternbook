@@ -1,0 +1,16 @@
+[
+  {
+    "name": "sudo's realm",
+    "url": "https://silicajello.neocities.org",
+    "description": "cool landing page",
+    "tags": [
+      "blog",
+      "minimalist"
+    ],
+    "neighbors": [
+      "https://polygonoid.com",
+      "https://sample.com"
+    ],
+    "heartbeat": "2026-03-31T15:00:00Z"
+  }
+]
