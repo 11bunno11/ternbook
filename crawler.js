@@ -77,6 +77,7 @@ async function crawlSite(url) {
 async function main() {
   for (let site of knownSites) {
     await crawlSite(site);
+    await new Promise(r => setTimeout(r, 2000));
   }
 
   console.log("✅ done");
