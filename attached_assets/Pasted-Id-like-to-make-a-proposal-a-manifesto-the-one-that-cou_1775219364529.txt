@@ -1,0 +1,11 @@
+Id like to make a proposal. a manifesto. the one that could possibly make the internet feel a bit more alive. if done right.
+        
+id like to call it 'ternbook. it's basically the directory for the modern age. it's gonna be very simple to list your website. you put your website's URL, and the website spits out a .json file. website would instruct how to use the json stuff. using the .well-known protocol to easily give a quick way to tell what kind of website you want 'ternbook to list as. (predetermined tag plus "minor" tags, up to 10 would be valid)  
+a heartbeat (POST) would be sent by the website every maybe 12 to 24 hours?? so that new websites could easily pop up on the "latest sites" and stuff like that. latest would be determined by freshness, trust score and randomness. if there's another website in the well-known's json, that could make it a "neighbor", which could function as a webring. there could also be a "map generator" (opt-in) to know what website connects to what, etc..        
+to stop bots from spamming, a website needs to have at least 1 " trustworthy neighbor" (2way neighbor), or doing a captcha (simply clicking a button), once you finish it, you can get a "trust code" that you can put inside the json. (copy paste) you'd better have a  "trusted neighbor" code to be able to get on the feed more better. which also brings trust decay (inactive sites lose trust), and the trust weight system (older/more connected = stronger trust)  
+also, bot webrings.. to combat that, a bridge needs exist. if there's no "bridge", those website trusts would go down, making it harder to get into the "latest" feed
+real humans would make a really big network, those clusters would be connected in some way, plus if there's no heartbeat, and the JSON, there's literally no way to be on the ternbook. i mean, what if my website is connected to ternbook, and my website is also connected to someone else, and there's like a triangle of triangles of squares etc etc.. thats gonna scale large into something a bot could possibly never make..
+
+the v1 (if i make it) would be extremely simple.
+a .json file, a directory, and a bit of pinging. trust would be implemented once bots start emerging.
+wdyt??
