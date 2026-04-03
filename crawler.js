@@ -8,17 +8,16 @@ let visited = new Set();
 
 async function fetchJSON(baseUrl) {
   try {
-    const res = await fetch(baseUrl + "/.well-known/ternbook.json", {
-      headers: { Accept: "application/json" },
-      signal: AbortSignal.timeout(5000),
-    });
+    const res = await fetch(baseUrl + "/.well-known/ternbook.json");
+
+    console.log("status:", res.status);
 
     if (!res.ok) throw new Error("bad response");
 
     const data = await res.json();
     return data;
   } catch (err) {
-    console.log("❌ failed:", baseUrl);
+    console.log("❌ failed:", baseUrl, err.message);
     return null;
   }
 }
@@ -39,7 +38,11 @@ function save(data) {
   let db = [];
 
   if (fs.existsSync("db.json")) {
-    db = JSON.parse(fs.readFileSync("db.json"));
+    try {
+      db = JSON.parse(fs.readFileSync("db.json"));
+    } catch {
+      db = [];
+    }
   }
 
   // replace existing or add new
@@ -77,7 +80,7 @@ async function crawlSite(url) {
 async function main() {
   for (let site of knownSites) {
     await crawlSite(site);
-    await new Promise(r => setTimeout(r, 2000));
+    await new Promise((r) => setTimeout(r, 2000));
   }
 
   console.log("✅ done");
