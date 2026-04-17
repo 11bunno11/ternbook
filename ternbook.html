@@ -24,7 +24,7 @@
 
     <script>
       async function loadSites() {
-        const res = await fetch("/api/sites");
+        const res = await fetch("http://localhost:3000/sites");
         const sites = await res.json();
 
         const container = document.getElementById("sites");
@@ -36,8 +36,8 @@
           div.innerHTML = `
       <h2><a href="${site.url}" target="_blank">${site.name}</a></h2>
       <p>${site.description || ""}</p>
-      <p>🏷️ ${(site.tags || []).join(", ")}</p>
-      <p>🔗 ${(site.neighbors || []).join(", ")}</p>
+      <p>🏷️ ${site.tags.join(", ")}</p>
+      <p>👥 ${site.neighbors.join(", ")}</p>
     `;
 
           container.appendChild(div);

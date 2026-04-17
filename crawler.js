@@ -2,6 +2,11 @@ const { Pool } = require("pg");
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
+function log(emoji, ...args) {
+  const time = new Date().toISOString().replace("T", " ").slice(0, 19);
+  console.log(`[${time}]`, emoji, ...args);
+}
+
 let knownSites = [
   "https://ternbook.neocities.org",
 ];
@@ -20,7 +25,7 @@ async function fetchJSON(baseUrl) {
     const data = await res.json();
     return data;
   } catch (err) {
-    console.log("❌ failed:", baseUrl);
+    log("❌", "fetch failed:", baseUrl, "-", err.message);
     return null;
   }
 }
@@ -63,22 +68,23 @@ async function crawlSite(url) {
   if (visited.has(url)) return;
   visited.add(url);
 
-  console.log("🔍 crawling:", url);
+  log("🔍", "crawling:", url);
 
   const data = await fetchJSON(url);
 
   if (!validate(data, url)) {
-    console.log("⚠️ invalid:", url);
+    log("⚠️", "invalid or unreachable:", url);
     return;
   }
 
   data.lastSeen = new Date().toISOString();
   await save(data);
-  console.log("✅ saved:", url);
+  log("💾", "saved:", url);
 
   if (data.neighbors) {
     for (let neighbor of data.neighbors) {
       if (!visited.has(neighbor)) {
+        log("🔗", "discovered neighbor:", neighbor);
         knownSites.push(neighbor);
       }
     }
@@ -86,13 +92,18 @@ async function crawlSite(url) {
 }
 
 async function main() {
+  log("🚀", "crawler started, seed sites:", knownSites.length);
+
+  let i = 0;
   for (let site of knownSites) {
+    i++;
+    log("📋", `progress: ${i}/${knownSites.length}`, `| queue: ${knownSites.length - i} remaining`);
     await crawlSite(site);
     await new Promise(r => setTimeout(r, 2000));
   }
 
   await pool.end();
-  console.log("✅ done");
+  log("✅", `done — visited ${visited.size} site(s)`);
 }
 
 main();
