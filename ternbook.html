@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ternbook</title>
+  <style>
+    body { font-family: sans-serif; background: #111; color: #eee; }
+    .site { border: 1px solid #333; padding: 10px; margin: 10px; }
+    a { color: #4da6ff; }
+  </style>
+</head>
+<body>
+
+<h1>🌐 ternbook</h1>
+<div id="sites"></div>
+
+<script>
+async function loadSites() {
+  const res = await fetch("/api/sites");
+  const sites = await res.json();
+
+  const container = document.getElementById("sites");
+
+  sites.forEach(site => {
+    const div = document.createElement("div");
+    div.className = "site";
+
+    div.innerHTML = `
+      <h2><a href="${site.url}" target="_blank">${site.name}</a></h2>
+      <p>${site.description || ""}</p>
+      <p>🏷️ ${(site.tags || []).join(", ")}</p>
+      <p>🔗 ${(site.neighbors || []).join(", ")}</p>
+    `;
+
+    container.appendChild(div);
+  });
+}
+
+loadSites();
+</script>
+
+</body>
+</html>
