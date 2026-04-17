@@ -36,7 +36,8 @@ router.post("/heartbeat", async (req, res) => {
 
   try {
     data = await fetchSiteData(url);
-  } catch {
+  } catch (err) {
+    req.log.warn({ err, url }, "failed to fetch ternbook.json");
     res.status(422).json({ error: "could not fetch ternbook.json from that url" });
     return;
   }
