@@ -10,7 +10,8 @@
     "neighbors": [
       "https://silicajello.neocities.org"
     ],
-    "heartbeat": "2026-03-31T15:00:00Z"
+    "heartbeat": "2026-04-17T11:46:11Z",
+    "nb": "randomnumbersandletters"
   },
   {
     "name": "sudo's realm",
@@ -23,6 +24,7 @@
     "neighbors": [
       "https://ternbook.neocities.org"
     ],
-    "heartbeat": "2026-03-31T15:00:00Z"
+    "heartbeat": "2026-03-31T15:00:00Z",
+    "nb": "replacewithproperthing"
   }
 ]
