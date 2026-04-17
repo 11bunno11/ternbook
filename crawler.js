@@ -49,7 +49,7 @@ function save(data) {
   db = db.filter((site) => site.url !== data.url);
   db.push(data);
 
-  fs.writeFileSync("db.json", JSON.stringify(db, null, 2));
+  fs.writeFileSync("db.json", JSON.stringify(db));
 }
 
 async function crawlSite(url) {
