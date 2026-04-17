@@ -32,17 +32,19 @@ router.post("/heartbeat", async (req, res) => {
     return;
   }
 
+  const normalizedUrl = url.replace(/\/+$/, "");
+
   let data: Record<string, unknown>;
 
   try {
-    data = await fetchSiteData(url);
+    data = await fetchSiteData(normalizedUrl);
   } catch (err) {
-    req.log.warn({ err, url }, "failed to fetch ternbook.json");
+    req.log.warn({ err, url: normalizedUrl }, "failed to fetch ternbook.json");
     res.status(422).json({ error: "could not fetch ternbook.json from that url" });
     return;
   }
 
-  if (!validate(data, url)) {
+  if (!validate(data, normalizedUrl)) {
     res.status(422).json({ error: "ternbook.json is invalid" });
     return;
   }
@@ -72,7 +74,7 @@ router.post("/heartbeat", async (req, res) => {
       },
     });
 
-  res.json({ ok: true, url });
+  res.json({ ok: true, url: normalizedUrl });
 });
 
 export default router;
