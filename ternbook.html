@@ -24,7 +24,7 @@
 
     <script>
       async function loadSites() {
-        const res = await fetch("http://localhost:3000/sites");
+        const res = await fetch("/api/sites");
         const sites = await res.json();
 
         const container = document.getElementById("sites");

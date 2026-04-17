@@ -1,10 +1,21 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { sitesTable } from "@workspace/db/schema";
+import { eq, and, ne } from "drizzle-orm";
 import fs from "fs";
 import path from "path";
 
 const router: IRouter = Router();
+const RATE_LIMIT_MS = 12 * 60 * 60 * 1000;
+const EXCEPTIONS_PATH = path.join(process.cwd(), "../../exceptions.json");
+
+function loadExceptions(): string[] {
+  try {
+    return JSON.parse(fs.readFileSync(EXCEPTIONS_PATH, "utf8"));
+  } catch {
+    return [];
+  }
+}
 
 async function fetchSiteData(baseUrl: string) {
   const res = await fetch(baseUrl + "/.well-known/ternbook.json", {
@@ -35,6 +46,27 @@ router.post("/heartbeat", async (req, res) => {
   }
 
   const normalizedUrl = url.replace(/\/+$/, "");
+  const exceptions = loadExceptions();
+  const isExempt = exceptions.includes(normalizedUrl);
+
+  if (!isExempt) {
+    const [existing] = await db
+      .select({ lastSeen: sitesTable.lastSeen })
+      .from(sitesTable)
+      .where(eq(sitesTable.url, normalizedUrl));
+
+    if (existing?.lastSeen) {
+      const elapsed = Date.now() - existing.lastSeen.getTime();
+      if (elapsed < RATE_LIMIT_MS) {
+        const retryAfterMins = Math.ceil((RATE_LIMIT_MS - elapsed) / 60000);
+        res.status(429).json({
+          error: "rate limited",
+          retryAfterMinutes: retryAfterMins,
+        });
+        return;
+      }
+    }
+  }
 
   let data: Record<string, unknown>;
 
@@ -51,6 +83,35 @@ router.post("/heartbeat", async (req, res) => {
     return;
   }
 
+  // duplicate nb check — if another site has the same nb, the newer one loses
+  const nbCode = (data.nb as string) ?? null;
+  if (nbCode) {
+    const [nbConflict] = await db
+      .select({ url: sitesTable.url, registeredAt: sitesTable.registeredAt })
+      .from(sitesTable)
+      .where(and(eq(sitesTable.nb, nbCode), ne(sitesTable.url, normalizedUrl)));
+
+    if (nbConflict) {
+      const [currentSite] = await db
+        .select({ registeredAt: sitesTable.registeredAt })
+        .from(sitesTable)
+        .where(eq(sitesTable.url, normalizedUrl));
+
+      const currentRegistered = currentSite?.registeredAt ?? new Date();
+      const conflictRegistered = nbConflict.registeredAt;
+
+      if (currentRegistered > conflictRegistered) {
+        // current site registered later — it loses
+        res.status(409).json({ error: "nb code already claimed by an earlier site" });
+        return;
+      } else {
+        // conflicting site registered later — delete it
+        req.log.warn({ url: nbConflict.url }, "removing duplicate nb code site");
+        await db.delete(sitesTable).where(eq(sitesTable.url, nbConflict.url));
+      }
+    }
+  }
+
   await db
     .insert(sitesTable)
     .values({
@@ -59,7 +120,7 @@ router.post("/heartbeat", async (req, res) => {
       description: (data.description as string) ?? null,
       tags: (data.tags as string[]) ?? null,
       neighbors: (data.neighbors as string[]) ?? null,
-      nb: (data.nb as string) ?? null,
+      nb: nbCode,
       heartbeat: data.heartbeat ? new Date(data.heartbeat as string) : null,
       lastSeen: new Date(),
     })
@@ -70,9 +131,10 @@ router.post("/heartbeat", async (req, res) => {
         description: (data.description as string) ?? null,
         tags: (data.tags as string[]) ?? null,
         neighbors: (data.neighbors as string[]) ?? null,
-        nb: (data.nb as string) ?? null,
+        nb: nbCode,
         heartbeat: data.heartbeat ? new Date(data.heartbeat as string) : null,
         lastSeen: new Date(),
+        // registeredAt is intentionally not updated here
       },
     });
 

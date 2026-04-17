@@ -9,6 +9,7 @@ export const sitesTable = pgTable("sites", {
   nb: text("nb"),
   heartbeat: timestamp("heartbeat", { withTimezone: true }),
   lastSeen: timestamp("last_seen", { withTimezone: true }),
+  registeredAt: timestamp("registered_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type Site = typeof sitesTable.$inferSelect;
