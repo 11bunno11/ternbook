@@ -1,6 +1,8 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { sitesTable } from "@workspace/db/schema";
+import fs from "fs";
+import path from "path";
 
 const router: IRouter = Router();
 
@@ -73,6 +75,12 @@ router.post("/heartbeat", async (req, res) => {
         lastSeen: new Date(),
       },
     });
+
+  const timestamp = new Date().toISOString().replace("T", " ").slice(0, 19);
+  fs.appendFileSync(
+    path.join(process.cwd(), "../../requesttimes.txt"),
+    `crawl requested on ${timestamp} for ${normalizedUrl}\n`
+  );
 
   res.json({ ok: true, url: normalizedUrl });
 });
