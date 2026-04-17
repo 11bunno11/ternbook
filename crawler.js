@@ -65,6 +65,7 @@ async function crawlSite(url) {
     return;
   }
 
+  data.lastSeen = new Date().toISOString();
   save(data);
 
   // discover neighbors
