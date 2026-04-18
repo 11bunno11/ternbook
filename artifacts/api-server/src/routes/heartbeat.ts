@@ -36,6 +36,13 @@ async function fetchSiteData(baseUrl: string) {
 
   if (!res.ok) throw new Error("bad response");
 
+  // Ensure we didn't get redirected to a different domain
+  const finalHostname = new URL(res.url).hostname;
+  const expectedHostname = new URL(baseUrl).hostname;
+  if (finalHostname !== expectedHostname) {
+    throw new Error(`redirect domain mismatch: expected ${expectedHostname}, got ${finalHostname}`);
+  }
+
   return res.json();
 }
 
