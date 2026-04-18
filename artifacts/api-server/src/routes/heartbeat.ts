@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { sitesTable } from "@workspace/db/schema";
 import { eq, and, ne } from "drizzle-orm";
+import crypto from "crypto";
 import fs from "fs";
 import path from "path";
 
@@ -15,6 +16,14 @@ function loadExceptions(): string[] {
   } catch {
     return [];
   }
+}
+
+function generateIAL(url: string, registeredAt: Date): string {
+  const hostname = new URL(url).hostname;
+  return crypto
+    .createHash("sha256")
+    .update(hostname + registeredAt.toISOString())
+    .digest("hex");
 }
 
 async function fetchSiteData(baseUrl: string) {
@@ -49,6 +58,7 @@ router.post("/heartbeat", async (req, res) => {
   const exceptions = loadExceptions();
   const isExempt = exceptions.includes(normalizedUrl);
 
+  // check rate limit
   if (!isExempt) {
     const [existing] = await db
       .select({ lastSeen: sitesTable.lastSeen })
@@ -59,10 +69,7 @@ router.post("/heartbeat", async (req, res) => {
       const elapsed = Date.now() - existing.lastSeen.getTime();
       if (elapsed < RATE_LIMIT_MS) {
         const retryAfterMins = Math.ceil((RATE_LIMIT_MS - elapsed) / 60000);
-        res.status(429).json({
-          error: "rate limited",
-          retryAfterMinutes: retryAfterMins,
-        });
+        res.status(429).json({ error: "rate limited", retryAfterMinutes: retryAfterMins });
         return;
       }
     }
@@ -83,46 +90,48 @@ router.post("/heartbeat", async (req, res) => {
     return;
   }
 
-  // duplicate nb check — if another site has the same nb, the newer one loses
-  const nbCode = (data.nb as string) ?? null;
-  if (nbCode) {
-    const [nbConflict] = await db
+  // look up existing record to get registeredAt (or set it now for new sites)
+  const [currentSite] = await db
+    .select({ registeredAt: sitesTable.registeredAt, ial: sitesTable.ial })
+    .from(sitesTable)
+    .where(eq(sitesTable.url, normalizedUrl));
+
+  const registeredAt = currentSite?.registeredAt ?? new Date();
+  const ial = generateIAL(normalizedUrl, registeredAt);
+
+  // verify IAL if the site sent one
+  const sentIAL = (data.ial as string) ?? null;
+  if (sentIAL && sentIAL !== ial) {
+    res.status(403).json({ error: "ial code mismatch" });
+    return;
+  }
+
+  // duplicate IAL check — newer registered site loses
+  if (currentSite === undefined) {
+    // new site: check if the generated IAL is already claimed (extremely unlikely but safe)
+    const [ialConflict] = await db
       .select({ url: sitesTable.url, registeredAt: sitesTable.registeredAt })
       .from(sitesTable)
-      .where(and(eq(sitesTable.nb, nbCode), ne(sitesTable.url, normalizedUrl)));
+      .where(and(eq(sitesTable.ial, ial), ne(sitesTable.url, normalizedUrl)));
 
-    if (nbConflict) {
-      const [currentSite] = await db
-        .select({ registeredAt: sitesTable.registeredAt })
-        .from(sitesTable)
-        .where(eq(sitesTable.url, normalizedUrl));
-
-      const currentRegistered = currentSite?.registeredAt ?? new Date();
-      const conflictRegistered = nbConflict.registeredAt;
-
-      if (currentRegistered > conflictRegistered) {
-        // current site registered later — it loses
-        res.status(409).json({ error: "nb code already claimed by an earlier site" });
-        return;
-      } else {
-        // conflicting site registered later — delete it
-        req.log.warn({ url: nbConflict.url }, "removing duplicate nb code site");
-        await db.delete(sitesTable).where(eq(sitesTable.url, nbConflict.url));
-      }
+    if (ialConflict) {
+      res.status(409).json({ error: "ial code conflict with an existing site" });
+      return;
     }
   }
 
   await db
     .insert(sitesTable)
     .values({
-      url: data.url as string,
+      url: normalizedUrl,
       name: data.name as string,
       description: (data.description as string) ?? null,
       tags: (data.tags as string[]) ?? null,
       neighbors: (data.neighbors as string[]) ?? null,
-      nb: nbCode,
+      ial,
       heartbeat: data.heartbeat ? new Date(data.heartbeat as string) : null,
       lastSeen: new Date(),
+      registeredAt,
     })
     .onConflictDoUpdate({
       target: sitesTable.url,
@@ -131,10 +140,10 @@ router.post("/heartbeat", async (req, res) => {
         description: (data.description as string) ?? null,
         tags: (data.tags as string[]) ?? null,
         neighbors: (data.neighbors as string[]) ?? null,
-        nb: nbCode,
+        ial,
         heartbeat: data.heartbeat ? new Date(data.heartbeat as string) : null,
         lastSeen: new Date(),
-        // registeredAt is intentionally not updated here
+        // registeredAt intentionally not updated
       },
     });
 
@@ -144,7 +153,7 @@ router.post("/heartbeat", async (req, res) => {
     `crawl requested on ${timestamp} for ${normalizedUrl}\n`
   );
 
-  res.json({ ok: true, url: normalizedUrl });
+  res.json({ ok: true, url: normalizedUrl, ial });
 });
 
 export default router;

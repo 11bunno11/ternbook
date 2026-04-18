@@ -41,14 +41,14 @@ function validate(data, baseUrl) {
 
 async function save(data) {
   await pool.query(
-    `INSERT INTO sites (url, name, description, tags, neighbors, nb, heartbeat, last_seen)
+    `INSERT INTO sites (url, name, description, tags, neighbors, ial, heartbeat, last_seen)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      ON CONFLICT (url) DO UPDATE SET
        name = EXCLUDED.name,
        description = EXCLUDED.description,
        tags = EXCLUDED.tags,
        neighbors = EXCLUDED.neighbors,
-       nb = EXCLUDED.nb,
+       ial = EXCLUDED.ial,
        heartbeat = EXCLUDED.heartbeat,
        last_seen = EXCLUDED.last_seen`,
     [
@@ -57,7 +57,7 @@ async function save(data) {
       data.description ?? null,
       data.tags ?? null,
       data.neighbors ?? null,
-      data.nb ?? null,
+      data.ial ?? null,
       data.heartbeat ? new Date(data.heartbeat) : null,
       new Date(data.lastSeen),
     ]

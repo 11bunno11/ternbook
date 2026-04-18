@@ -6,7 +6,7 @@ export const sitesTable = pgTable("sites", {
   description: text("description"),
   tags: text("tags").array(),
   neighbors: text("neighbors").array(),
-  nb: text("nb"),
+  ial: text("ial"),
   heartbeat: timestamp("heartbeat", { withTimezone: true }),
   lastSeen: timestamp("last_seen", { withTimezone: true }),
   registeredAt: timestamp("registered_at", { withTimezone: true }).defaultNow().notNull(),
