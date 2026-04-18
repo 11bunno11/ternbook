@@ -19,9 +19,11 @@ function loadExceptions(): string[] {
 }
 
 function generateIAL(url: string, registeredAt: Date): string {
+  const secret = process.env.IAL_SECRET;
+  if (!secret) throw new Error("IAL_SECRET environment variable is not set");
   const hostname = new URL(url).hostname;
   return crypto
-    .createHash("sha256")
+    .createHmac("sha256", secret)
     .update(hostname + registeredAt.toISOString())
     .digest("hex");
 }

@@ -37,3 +37,8 @@ localPort = 8081
 
 [[ports]]
 localPort = 8084
+
+[userenv]
+
+[userenv.shared]
+IAL_SECRET = "5ec96cabd9d1c6ceade5842942aa72cec0bb6c9175c22749fdf7f635dba5e390"
