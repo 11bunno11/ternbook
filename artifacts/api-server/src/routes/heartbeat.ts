@@ -105,6 +105,7 @@ router.post("/heartbeat", async (req, res) => {
     res.status(403).json({ error: "ial code mismatch" });
     return;
   }
+  const ialVerified = sentIAL === ial;
 
   // duplicate IAL check — newer registered site loses
   if (currentSite === undefined) {
@@ -129,6 +130,7 @@ router.post("/heartbeat", async (req, res) => {
       tags: (data.tags as string[]) ?? null,
       neighbors: (data.neighbors as string[]) ?? null,
       ial,
+      ialVerified,
       heartbeat: data.heartbeat ? new Date(data.heartbeat as string) : null,
       lastSeen: new Date(),
       registeredAt,
@@ -141,6 +143,7 @@ router.post("/heartbeat", async (req, res) => {
         tags: (data.tags as string[]) ?? null,
         neighbors: (data.neighbors as string[]) ?? null,
         ial,
+        ialVerified,
         heartbeat: data.heartbeat ? new Date(data.heartbeat as string) : null,
         lastSeen: new Date(),
         // registeredAt intentionally not updated
@@ -153,7 +156,7 @@ router.post("/heartbeat", async (req, res) => {
     `crawl requested on ${timestamp} for ${normalizedUrl}\n`
   );
 
-  res.json({ ok: true, url: normalizedUrl, ial });
+  res.json({ ok: true, url: normalizedUrl, ial, ialVerified });
 });
 
 export default router;
