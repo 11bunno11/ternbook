@@ -162,8 +162,6 @@ function validateData(data: Record<string, unknown>, baseUrl: string): string | 
 
   if (data.ial !== undefined && data.ial !== null) {
     if (typeof data.ial !== "string") return "ial must be a string";
-    if (data.ial.length !== IAL_HEX_LENGTH) return `ial must be exactly ${IAL_HEX_LENGTH} characters`;
-    if (!/^[0-9a-f]+$/.test(data.ial)) return "ial must be a lowercase hex string";
   }
 
   return null;
