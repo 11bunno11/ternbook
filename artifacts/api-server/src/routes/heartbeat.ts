@@ -3,12 +3,16 @@ import { db } from "@workspace/db";
 import { sitesTable } from "@workspace/db/schema";
 import { eq, and, ne } from "drizzle-orm";
 import crypto from "crypto";
+import dns from "dns";
 import fs from "fs";
 import path from "path";
+import net from "net";
 
 const router: IRouter = Router();
 const RATE_LIMIT_MS = 12 * 60 * 60 * 1000;
 const EXCEPTIONS_PATH = path.join(process.cwd(), "../../exceptions.json");
+const MAX_NEIGHBORS = parseInt(process.env.MAX_NEIGHBORS ?? "64", 10);
+const IAL_HEX_LENGTH = 64; // HMAC-SHA256 hex output
 
 function loadExceptions(): string[] {
   try {
@@ -28,31 +32,165 @@ function generateIAL(url: string, registeredAt: Date): string {
     .digest("hex");
 }
 
+function isPrivateIP(ip: string): boolean {
+  if (net.isIPv4(ip)) {
+    const parts = ip.split(".").map(Number);
+    const [a, b] = parts;
+    if (a === 0) return true;
+    if (a === 10) return true;
+    if (a === 127) return true;
+    if (a === 169 && b === 254) return true;
+    if (a === 172 && b >= 16 && b <= 31) return true;
+    if (a === 192 && b === 168) return true;
+    if (a === 100 && b >= 64 && b <= 127) return true;
+    if (a === 198 && b === 18) return true;
+    if (a === 198 && b === 19) return true;
+    return false;
+  }
+
+  if (net.isIPv6(ip)) {
+    const normalized = ip.toLowerCase();
+    if (normalized === "::1") return true;
+    if (normalized.startsWith("fc") || normalized.startsWith("fd")) return true;
+    if (normalized.startsWith("fe80")) return true;
+    if (normalized.startsWith("::ffff:")) {
+      const v4 = normalized.slice(7);
+      if (net.isIPv4(v4)) return isPrivateIP(v4);
+    }
+    return false;
+  }
+
+  return true;
+}
+
+async function resolveAndCheckIP(hostname: string): Promise<void> {
+  let addresses: string[] = [];
+
+  try {
+    const v4 = await dns.promises.resolve4(hostname).catch(() => [] as string[]);
+    const v6 = await dns.promises.resolve6(hostname).catch(() => [] as string[]);
+    addresses = [...v4, ...v6];
+  } catch {
+    throw new Error(`dns resolution failed for ${hostname}`);
+  }
+
+  if (addresses.length === 0) {
+    throw new Error(`no dns records found for ${hostname}`);
+  }
+
+  for (const ip of addresses) {
+    if (isPrivateIP(ip)) {
+      throw new Error(`hostname ${hostname} resolves to private IP ${ip}`);
+    }
+  }
+}
+
+function hasControlChars(str: string): boolean {
+  for (let i = 0; i < str.length; i++) {
+    const cp = str.codePointAt(i)!;
+    if (cp <= 0x08) return true;
+    if (cp === 0x0b || cp === 0x0c) return true;
+    if (cp >= 0x0e && cp <= 0x1f) return true;
+    if (cp === 0x7f) return true;
+    if (cp >= 0x80 && cp <= 0x9f) return true;
+    if (cp === 0x200b || cp === 0x200c || cp === 0x200d) return true;
+    if (cp === 0xfeff) return true;
+    if (cp >= 0x2060 && cp <= 0x2064) return true;
+    if (cp >= 0xe000 && cp <= 0xf8ff) return true;
+  }
+  return false;
+}
+
+function validateString(val: unknown, maxLen: number, field: string): string | null {
+  if (typeof val !== "string") return `${field} must be a string`;
+  if (val.length > maxLen) return `${field} exceeds ${maxLen} character limit`;
+  if (hasControlChars(val)) return `${field} contains invalid characters`;
+  return null;
+}
+
+function validateData(data: Record<string, unknown>, baseUrl: string): string | null {
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    return "ternbook.json must be a JSON object";
+  }
+
+  const nameErr = validateString(data.name, 64, "name");
+  if (nameErr) return nameErr;
+  if (!(data.name as string).trim()) return "name must not be empty";
+
+  if (typeof data.url !== "string") return "url must be a string";
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(data.url as string);
+  } catch {
+    return "url is not a valid URL";
+  }
+  if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+    return "url must use http or https";
+  }
+  const normalizedDataUrl = (data.url as string).replace(/\/+$/, "");
+  if (normalizedDataUrl !== baseUrl) return "url does not match the registered site url";
+
+  if (data.description !== undefined && data.description !== null) {
+    const descErr = validateString(data.description, 256, "description");
+    if (descErr) return descErr;
+  }
+
+  if (data.tags !== undefined && data.tags !== null) {
+    if (!Array.isArray(data.tags)) return "tags must be an array";
+    if (data.tags.length > 10) return "tags exceeds 10 item limit";
+    for (const tag of data.tags) {
+      const tagErr = validateString(tag, 64, "tag");
+      if (tagErr) return tagErr;
+    }
+  }
+
+  if (data.neighbors !== undefined && data.neighbors !== null) {
+    if (!Array.isArray(data.neighbors)) return "neighbors must be an array";
+    if (data.neighbors.length > MAX_NEIGHBORS) return `neighbors exceeds ${MAX_NEIGHBORS} item limit`;
+    for (const neighbor of data.neighbors) {
+      if (typeof neighbor !== "string") return "each neighbor must be a string";
+      try {
+        const n = new URL(neighbor);
+        if (n.protocol !== "http:" && n.protocol !== "https:") {
+          return "neighbor urls must use http or https";
+        }
+      } catch {
+        return `invalid neighbor url: ${neighbor}`;
+      }
+    }
+  }
+
+  if (data.ial !== undefined && data.ial !== null) {
+    if (typeof data.ial !== "string") return "ial must be a string";
+    if (data.ial.length !== IAL_HEX_LENGTH) return `ial must be exactly ${IAL_HEX_LENGTH} characters`;
+    if (!/^[0-9a-f]+$/.test(data.ial)) return "ial must be a lowercase hex string";
+  }
+
+  return null;
+}
+
 async function fetchSiteData(baseUrl: string) {
   const res = await fetch(baseUrl + "/.well-known/ternbook.json", {
     headers: { Accept: "application/json" },
     signal: AbortSignal.timeout(5000),
   });
 
-  if (!res.ok) throw new Error("bad response");
+  if (!res.ok) throw new Error(`bad response: ${res.status}`);
 
-  // Ensure we didn't get redirected to a different domain
-  const finalHostname = new URL(res.url).hostname;
+  const finalUrl = new URL(res.url);
   const expectedHostname = new URL(baseUrl).hostname;
-  if (finalHostname !== expectedHostname) {
-    throw new Error(`redirect domain mismatch: expected ${expectedHostname}, got ${finalHostname}`);
+
+  if (finalUrl.hostname !== expectedHostname) {
+    throw new Error(`redirect domain mismatch: expected ${expectedHostname}, got ${finalUrl.hostname}`);
+  }
+  if (finalUrl.protocol !== "http:" && finalUrl.protocol !== "https:") {
+    throw new Error(`redirect to non-http protocol: ${finalUrl.protocol}`);
   }
 
-  return res.json();
-}
+  // Re-check resolved IP after redirect in case it landed on a different host
+  await resolveAndCheckIP(finalUrl.hostname);
 
-function validate(data: Record<string, unknown>, baseUrl: string): boolean {
-  if (!data || typeof data !== "object") return false;
-  if (!data.name || !data.url) return false;
-  if (data.url !== baseUrl) return false;
-  if (Array.isArray(data.tags) && data.tags.length > 10) return false;
-  if (Array.isArray(data.neighbors) && data.neighbors.length > 20) return false;
-  return true;
+  return res.json();
 }
 
 router.post("/heartbeat", async (req, res) => {
@@ -63,11 +201,32 @@ router.post("/heartbeat", async (req, res) => {
     return;
   }
 
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(url);
+  } catch {
+    res.status(400).json({ error: "url is not a valid URL" });
+    return;
+  }
+
+  if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+    res.status(400).json({ error: "url must use http or https" });
+    return;
+  }
+
   const normalizedUrl = url.replace(/\/+$/, "");
+
+  // Resolve DNS and reject private IPs before making any request
+  try {
+    await resolveAndCheckIP(parsedUrl.hostname);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+    return;
+  }
+
   const exceptions = loadExceptions();
   const isExempt = exceptions.includes(normalizedUrl);
 
-  // check rate limit
   if (!isExempt) {
     const [existing] = await db
       .select({ lastSeen: sitesTable.lastSeen })
@@ -88,18 +247,18 @@ router.post("/heartbeat", async (req, res) => {
 
   try {
     data = await fetchSiteData(normalizedUrl);
-  } catch (err) {
+  } catch (err: any) {
     req.log.warn({ err, url: normalizedUrl }, "failed to fetch ternbook.json");
     res.status(422).json({ error: "could not fetch ternbook.json from that url" });
     return;
   }
 
-  if (!validate(data, normalizedUrl)) {
-    res.status(422).json({ error: "ternbook.json is invalid" });
+  const validationError = validateData(data, normalizedUrl);
+  if (validationError) {
+    res.status(422).json({ error: validationError });
     return;
   }
 
-  // look up existing record to get registeredAt (or set it now for new sites)
   const [currentSite] = await db
     .select({ registeredAt: sitesTable.registeredAt, ial: sitesTable.ial })
     .from(sitesTable)
@@ -108,7 +267,6 @@ router.post("/heartbeat", async (req, res) => {
   const registeredAt = currentSite?.registeredAt ?? new Date();
   const ial = generateIAL(normalizedUrl, registeredAt);
 
-  // verify IAL if the site sent one
   const sentIAL = (data.ial as string) ?? null;
   if (sentIAL && sentIAL !== ial) {
     res.status(403).json({ error: "ial code mismatch" });
@@ -116,11 +274,9 @@ router.post("/heartbeat", async (req, res) => {
   }
   const ialVerified = sentIAL === ial;
 
-  // duplicate IAL check — newer registered site loses
   if (currentSite === undefined) {
-    // new site: check if the generated IAL is already claimed (extremely unlikely but safe)
     const [ialConflict] = await db
-      .select({ url: sitesTable.url, registeredAt: sitesTable.registeredAt })
+      .select({ url: sitesTable.url })
       .from(sitesTable)
       .where(and(eq(sitesTable.ial, ial), ne(sitesTable.url, normalizedUrl)));
 
@@ -140,7 +296,6 @@ router.post("/heartbeat", async (req, res) => {
       neighbors: (data.neighbors as string[]) ?? null,
       ial,
       ialVerified,
-      heartbeat: data.heartbeat ? new Date(data.heartbeat as string) : null,
       lastSeen: new Date(),
       registeredAt,
     })
@@ -153,9 +308,7 @@ router.post("/heartbeat", async (req, res) => {
         neighbors: (data.neighbors as string[]) ?? null,
         ial,
         ialVerified,
-        heartbeat: data.heartbeat ? new Date(data.heartbeat as string) : null,
         lastSeen: new Date(),
-        // registeredAt intentionally not updated
       },
     });
 
