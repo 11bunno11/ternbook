@@ -1,0 +1,21 @@
+{
+  "coreContent": [
+    "blog", "portfolio", "wiki", "personal", "project", "archive", "docs",
+    "forum", "social", "indie", "startup", "tools", "search", "media",
+    "gallery", "journal", "experiments", "learning", "education", "gaming",
+    "music", "art", "writing", "photography", "coding", "devlog", "maps",
+    "recipes", "news", "links", "directory", "microblog"
+  ],
+  "vibeWebCulture": [
+    "web1", "webcore", "y2k", "cyberpunk", "minimal", "brutalist", "retro",
+    "terminal", "weirdweb", "handmade", "cozy", "chaotic", "aesthetic",
+    "oldnet", "lowtech", "experimental", "glitch", "vaporwave"
+  ],
+  "contentSafety": [
+    "nsfw", "political", "ads", "ai-generated", "satire"
+  ],
+  "systemTags": [
+    "orphaned", "highly-connected", "mutual-ring", "hidden-gem",
+    "verified", "ghostsite", "island", "fresh", "ancient"
+  ]
+}
