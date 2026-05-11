@@ -7,6 +7,7 @@ import dns from "dns";
 import fs from "fs";
 import path from "path";
 import net from "net";
+import { USER_TAGS } from "../tags.js";
 
 const router: IRouter = Router();
 const RATE_LIMIT_MS = 12 * 60 * 60 * 1000;
@@ -141,6 +142,7 @@ function validateData(data: Record<string, unknown>, baseUrl: string): string | 
     for (const tag of data.tags) {
       const tagErr = validateString(tag, 64, "tag");
       if (tagErr) return tagErr;
+      if (!USER_TAGS.has(tag)) return `unknown tag: "${tag}" — see /api/tags for the allowed list`;
     }
   }
 
