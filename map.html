@@ -52,6 +52,43 @@
 
       #tag-filter:focus { outline: 1px solid #444; }
 
+      .search-row {
+        display: flex;
+        gap: 6px;
+      }
+
+      #map-search {
+        flex: 1;
+        background: #111;
+        border: 1px solid #2a2a2a;
+        color: #ccc;
+        font-family: monospace;
+        font-size: 0.75rem;
+        padding: 5px 8px;
+        min-width: 0;
+      }
+
+      #map-search:focus { outline: 1px solid #444; }
+      #map-search::placeholder { color: #333; }
+
+      #search-go {
+        background: none;
+        border: 1px solid #2a2a2a;
+        color: #555;
+        font-family: monospace;
+        font-size: 0.75rem;
+        padding: 5px 8px;
+        cursor: pointer;
+      }
+
+      #search-go:hover { color: #aaa; border-color: #555; }
+
+      #search-status {
+        font-size: 0.65rem;
+        color: #555;
+        min-height: 1em;
+      }
+
       #stats {
         font-size: 0.65rem;
         color: #444;
@@ -94,6 +131,12 @@
       .node circle {
         stroke-width: 1.5;
         transition: opacity 0.2s;
+      }
+
+      .node circle.highlighted {
+        stroke: #fff !important;
+        stroke-width: 3 !important;
+        filter: drop-shadow(0 0 6px rgba(255,255,255,0.6));
       }
 
       .node circle.just-updated {
@@ -142,6 +185,11 @@
         <h1>ternbook <span style="color:#444">/ map</span></h1>
         <a href="/">← directory</a>
       </div>
+      <div class="search-row">
+        <input id="map-search" type="text" placeholder="find a site…" spellcheck="false" />
+        <button id="search-go">go</button>
+      </div>
+      <div id="search-status"></div>
       <select id="tag-filter">
         <option value="">all tags</option>
       </select>
@@ -177,6 +225,56 @@
 
       let allNodes = [], allLinks = [];
       let activeTag = "";
+      let nodeSelection = null; // d3 selection of all .node groups
+      let highlightTimer = null;
+
+      function zoomToNode(d) {
+        const scale = 3;
+        const x = window.innerWidth  / 2 - scale * d.x;
+        const y = window.innerHeight / 2 - scale * d.y;
+
+        svg.transition()
+          .duration(800)
+          .ease(d3.easeCubicInOut)
+          .call(zoom.transform, d3.zoomIdentity.translate(x, y).scale(scale));
+      }
+
+      function highlightNode(id) {
+        if (!nodeSelection) return;
+        // clear previous
+        nodeSelection.selectAll("circle").classed("highlighted", false);
+        if (highlightTimer) clearTimeout(highlightTimer);
+
+        const found = nodeSelection.filter((d) => d.id === id);
+        found.selectAll("circle").classed("highlighted", true);
+        highlightTimer = setTimeout(() => {
+          nodeSelection.selectAll("circle").classed("highlighted", false);
+        }, 3000);
+      }
+
+      function runMapSearch() {
+        const q = document.getElementById("map-search").value.trim().toLowerCase();
+        const status = document.getElementById("search-status");
+
+        if (!q) { status.textContent = ""; return; }
+
+        const match = allNodes.find((n) =>
+          n.name.toLowerCase().includes(q) ||
+          n.url.toLowerCase().includes(q) ||
+          (n.description || "").toLowerCase().includes(q)
+        );
+
+        if (!match || match.x == null) {
+          status.textContent = "not found";
+          status.style.color = "#7a4a4a";
+          return;
+        }
+
+        status.textContent = `→ ${match.name}`;
+        status.style.color = "#4a7a5a";
+        zoomToNode(match);
+        highlightNode(match.id);
+      }
 
       async function init() {
         const res = await fetch("/api/map");
@@ -190,6 +288,16 @@
 
         populateTags();
         render(allNodes, allLinks);
+
+        document.getElementById("search-go").addEventListener("click", runMapSearch);
+        document.getElementById("map-search").addEventListener("keydown", (e) => {
+          if (e.key === "Enter") runMapSearch();
+          if (e.key === "Escape") {
+            document.getElementById("map-search").value = "";
+            document.getElementById("search-status").textContent = "";
+            if (nodeSelection) nodeSelection.selectAll("circle").classed("highlighted", false);
+          }
+        });
       }
 
       function populateTags() {
@@ -282,7 +390,7 @@
             return "link" + (mutuals.has(key) ? " mutual" : "");
           });
 
-        const node = g.append("g")
+        nodeSelection = g.append("g")
           .selectAll("g")
           .data(nodes)
           .join("g")
@@ -308,6 +416,8 @@
             tooltip.style.top  = (e.clientY + 14) + "px";
           })
           .on("mouseleave", () => { tooltip.style.display = "none"; });
+
+        const node = nodeSelection;
 
         node.append("circle")
           .attr("r", nodeRadius)
