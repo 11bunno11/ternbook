@@ -100,6 +100,14 @@
         animation: pulse-fresh 5s ease-in-out infinite;
       }
 
+      .node circle.twelve-hours-ago {
+        animation: pulse-fresh 10s ease-in-out infinite;
+      }
+
+      .node circle.twenty-four-hours-ago {
+        animation: pulse-fresh 15s ease-in-out infinite;
+      }
+
       .node text {
         font-family: monospace;
         font-size: 11px;
@@ -305,7 +313,9 @@
           .attr("r", nodeRadius)
           .attr("fill", nodeColor)
           .attr("stroke", nodeStroke)
-          .classed("just-updated", (d) => d.systemTags.includes("just-updated"));
+          .classed("just-updated",        (d) => d.systemTags.includes("just-updated"))
+          .classed("twelve-hours-ago",    (d) => d.systemTags.includes("12-hours-ago"))
+          .classed("twenty-four-hours-ago",(d) => d.systemTags.includes("24-hours-ago"));
 
         node.append("text")
           .attr("x", (d) => nodeRadius(d) + 4)

@@ -30,13 +30,16 @@ export function getUserTags(): Set<string> {
 
 export const SYSTEM_TAGS = new Set([
   "orphaned", "highly-connected", "mutual-ring", "hidden-gem",
-  "verified", "ghostsite", "island", "fresh", "ancient", "just-updated",
+  "verified", "ghostsite", "island", "fresh", "ancient",
+  "just-updated", "12-hours-ago", "24-hours-ago",
 ]);
 
-const FRESH_MS        = 7   * 24 * 60 * 60 * 1000;
-const ANCIENT_MS      = 365 * 24 * 60 * 60 * 1000;
-const GHOST_MS        = 90  * 24 * 60 * 60 * 1000;
-const JUST_UPDATED_MS = 24  *      60 * 60 * 1000;
+const FRESH_MS         = 7  * 24 * 60 * 60 * 1000;
+const ANCIENT_MS       = 365 * 24 * 60 * 60 * 1000;
+const GHOST_MS         = 90  * 24 * 60 * 60 * 1000;
+const ONE_HOUR_MS      = 1       * 60 * 60 * 1000;
+const TWELVE_HOURS_MS  = 12      * 60 * 60 * 1000;
+const TWENTY_FOUR_MS   = 24      * 60 * 60 * 1000;
 
 export function computeSystemTags(
   site: Site & { mutuals: string[] },
@@ -50,8 +53,12 @@ export function computeSystemTags(
   const { mutuals } = site;
   const age = now.getTime() - (site.registeredAt?.getTime() ?? now.getTime());
 
-  if (site.lastSeen && now.getTime() - site.lastSeen.getTime() < JUST_UPDATED_MS)
-                                                    tags.push("just-updated");
+  if (site.lastSeen) {
+    const sinceLastSeen = now.getTime() - site.lastSeen.getTime();
+    if (sinceLastSeen < ONE_HOUR_MS)     tags.push("just-updated");
+    else if (sinceLastSeen < TWELVE_HOURS_MS)  tags.push("12-hours-ago");
+    else if (sinceLastSeen < TWENTY_FOUR_MS)   tags.push("24-hours-ago");
+  }
   if (site.ialVerified)                             tags.push("verified");
   if (age < FRESH_MS)                               tags.push("fresh");
   if (age > ANCIENT_MS)                             tags.push("ancient");
