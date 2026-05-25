@@ -19,22 +19,61 @@
         margin-bottom: 24px;
       }
 
-      header h1 {
-        font-size: 1.4rem;
-        color: #fff;
+      header h1 { font-size: 1.4rem; color: #fff; }
+      header span { font-size: 0.8rem; color: #555; }
+
+      /* Search */
+      .search-row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 14px;
       }
 
-      header span {
-        font-size: 0.8rem;
-        color: #555;
+      #search-input {
+        flex: 1;
+        background: #1a1a1a;
+        border: 1px solid #333;
+        color: #ccc;
+        font-family: monospace;
+        font-size: 0.85rem;
+        padding: 7px 10px;
       }
 
+      #search-input:focus { outline: 1px solid #555; }
+      #search-input::placeholder { color: #444; }
+
+      #search-btn {
+        background: #1e2a1e;
+        border: 1px solid #2a3e2a;
+        color: #6abf6a;
+        font-family: monospace;
+        font-size: 0.85rem;
+        padding: 7px 14px;
+        cursor: pointer;
+      }
+
+      #search-btn:hover { background: #243024; }
+
+      .search-hint {
+        font-size: 0.65rem;
+        color: #444;
+        margin-bottom: 16px;
+        line-height: 1.7;
+      }
+
+      .search-hint code {
+        color: #666;
+        background: #181818;
+        padding: 1px 4px;
+      }
+
+      /* Filters */
       .filters {
         display: flex;
         flex-wrap: wrap;
         gap: 10px;
         margin-bottom: 20px;
-        align-items: center;
+        align-items: flex-end;
       }
 
       .filter-group {
@@ -72,17 +111,13 @@
         font-size: 0.8rem;
         padding: 5px 10px;
         cursor: pointer;
-        align-self: flex-end;
       }
 
       .filter-reset:hover { color: #aaa; border-color: #555; }
 
-      #count {
-        font-size: 0.75rem;
-        color: #444;
-        margin-bottom: 16px;
-      }
+      #count { font-size: 0.75rem; color: #444; margin-bottom: 16px; }
 
+      /* Site grid */
       .sites {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -95,10 +130,7 @@
         background: #121212;
       }
 
-      .site h2 {
-        font-size: 0.95rem;
-        margin-bottom: 4px;
-      }
+      .site h2 { font-size: 0.95rem; margin-bottom: 4px; }
 
       .site h2 a {
         color: #7eb8f7;
@@ -114,12 +146,7 @@
         line-height: 1.4;
       }
 
-      .tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 4px;
-        margin-bottom: 6px;
-      }
+      .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
 
       .tag {
         font-size: 0.65rem;
@@ -130,15 +157,8 @@
       .tag-user   { background: #1e2a1e; color: #6abf6a; border: 1px solid #2a3e2a; }
       .tag-system { background: #1e1e2e; color: #7a7abf; border: 1px solid #2a2a3e; }
 
-      .site .meta {
-        font-size: 0.65rem;
-        color: #444;
-        margin-top: 6px;
-      }
-
-      .site .meta span + span::before {
-        content: " · ";
-      }
+      .site .meta { font-size: 0.65rem; color: #444; margin-top: 6px; }
+      .site .meta span + span::before { content: " · "; }
 
       .no-results {
         color: #444;
@@ -146,6 +166,19 @@
         padding: 40px 0;
         grid-column: 1 / -1;
       }
+
+      .mode-badge {
+        display: inline-block;
+        font-size: 0.65rem;
+        padding: 2px 6px;
+        background: #1a1a1a;
+        border: 1px solid #333;
+        color: #555;
+        margin-left: 8px;
+        vertical-align: middle;
+      }
+
+      .mode-badge.search { border-color: #2a3e2a; color: #6abf6a; background: #1e2a1e; }
     </style>
   </head>
   <body>
@@ -154,6 +187,21 @@
       <span>a web directory</span>
     </header>
 
+    <!-- Search -->
+    <div class="search-row">
+      <input id="search-input" type="text" placeholder='search…  try: tag:blog,coding  desc:recipes  -is:ghostsite  OR' spellcheck="false" />
+      <button id="search-btn">search</button>
+    </div>
+    <div class="search-hint">
+      <code>tag:a,b</code> match tags &nbsp;
+      <code>title:word</code> match name &nbsp;
+      <code>desc:word</code> match description &nbsp;
+      <code>is:verified</code> system tag &nbsp;
+      <code>-tag:nsfw</code> exclude &nbsp;
+      <code>OR</code> any instead of all
+    </div>
+
+    <!-- Dropdown filters -->
     <div class="filters">
       <div class="filter-group">
         <label>Core Content</label>
@@ -171,7 +219,7 @@
         <label>Ternbook Native</label>
         <select id="f-system"><option value="">All</option></select>
       </div>
-      <button class="filter-reset" id="reset">reset</button>
+      <button class="filter-reset" id="reset">reset all</button>
     </div>
 
     <div id="count"></div>
@@ -179,11 +227,12 @@
 
     <script>
       let allSites = [];
+      let searchMode = false;
 
+      // ── Tag dropdowns ────────────────────────────────────────────────
       async function loadTags() {
         const res = await fetch("/api/tags");
         const tags = await res.json();
-
         populate("f-core",   tags.coreContent);
         populate("f-vibe",   tags.vibeWebCulture);
         populate("f-safety", tags.contentSafety);
@@ -198,61 +247,89 @@
           opt.textContent = t;
           sel.appendChild(opt);
         });
-        sel.addEventListener("change", applyFilters);
+        sel.addEventListener("change", () => { clearSearch(); applyDropdowns(); });
       }
 
-      function getSelected() {
+      function getDropdownTags() {
         return ["f-core", "f-vibe", "f-safety", "f-system"]
           .map((id) => document.getElementById(id).value)
           .filter(Boolean);
       }
 
-      function applyFilters() {
-        const active = getSelected();
-
+      function applyDropdowns() {
+        const active = getDropdownTags();
         const results = active.length === 0
           ? allSites
           : allSites.filter((site) => {
-              const siteTags = new Set([
-                ...(site.tags || []),
-                ...(site.systemTags || []),
-              ]);
+              const siteTags = new Set([...(site.tags || []), ...(site.systemTags || [])]);
               return active.every((t) => siteTags.has(t));
             });
-
-        renderSites(results);
+        renderSites(results, false);
       }
 
-      function renderSites(sites) {
+      // ── Search ───────────────────────────────────────────────────────
+      async function runSearch() {
+        const q = document.getElementById("search-input").value.trim();
+        if (!q) { clearSearch(); applyDropdowns(); return; }
+
+        const res = await fetch("/api/search?q=" + encodeURIComponent(q));
+        if (!res.ok) { return; }
+        const data = await res.json();
+        searchMode = true;
+        renderSites(data.results, true);
+      }
+
+      function clearSearch() {
+        searchMode = false;
+        document.getElementById("search-input").value = "";
+      }
+
+      document.getElementById("search-btn").addEventListener("click", runSearch);
+      document.getElementById("search-input").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") runSearch();
+        if (e.key === "Escape") { clearSearch(); applyDropdowns(); }
+      });
+
+      // ── Reset ────────────────────────────────────────────────────────
+      document.getElementById("reset").addEventListener("click", () => {
+        ["f-core", "f-vibe", "f-safety", "f-system"].forEach((id) => {
+          document.getElementById(id).value = "";
+        });
+        clearSearch();
+        applyDropdowns();
+      });
+
+      // ── Render ───────────────────────────────────────────────────────
+      function renderSites(sites, isSearch) {
         const container = document.getElementById("sites");
         const count = document.getElementById("count");
         container.innerHTML = "";
-        count.textContent = `${sites.length} site${sites.length !== 1 ? "s" : ""}`;
+
+        const badge = isSearch
+          ? '<span class="mode-badge search">search results</span>'
+          : '';
+        count.innerHTML = `${sites.length} site${sites.length !== 1 ? "s" : ""}${badge}`;
 
         if (sites.length === 0) {
-          container.innerHTML = '<p class="no-results">no sites match the current filters</p>';
+          container.innerHTML = '<p class="no-results">no sites match</p>';
           return;
         }
 
         sites.forEach((site) => {
           const userTags = (site.tags || [])
-            .map((t) => `<span class="tag tag-user">${t}</span>`)
-            .join("");
+            .map((t) => `<span class="tag tag-user">${esc(t)}</span>`).join("");
           const systemTags = (site.systemTags || [])
-            .map((t) => `<span class="tag tag-system">${t}</span>`)
-            .join("");
-
+            .map((t) => `<span class="tag tag-system">${esc(t)}</span>`).join("");
           const mutualCount = (site.mutuals || []).length;
-          const inboundCount = site._inbound ?? "";
 
           const div = document.createElement("div");
           div.className = "site";
           div.innerHTML = `
-            <h2><a href="${site.url}" target="_blank" rel="noopener">${site.name}</a></h2>
-            <p class="desc">${site.description || ""}</p>
+            <h2><a href="${esc(site.url)}" target="_blank" rel="noopener">${esc(site.name)}</a></h2>
+            <p class="desc">${esc(site.description || "")}</p>
             <div class="tags">${userTags}${systemTags}</div>
             <div class="meta">
-              <span>${site.neighbors?.length ?? 0} neighbors</span>
+              <span>${(site.neighbors || []).length} neighbors</span>
               ${mutualCount ? `<span>${mutualCount} mutual${mutualCount !== 1 ? "s" : ""}</span>` : ""}
             </div>
           `;
@@ -260,18 +337,20 @@
         });
       }
 
+      function esc(str) {
+        return String(str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      // ── Init ─────────────────────────────────────────────────────────
       async function loadSites() {
         const res = await fetch("/api/sites");
         allSites = await res.json();
-        applyFilters();
+        applyDropdowns();
       }
-
-      document.getElementById("reset").addEventListener("click", () => {
-        ["f-core", "f-vibe", "f-safety", "f-system"].forEach((id) => {
-          document.getElementById(id).value = "";
-        });
-        applyFilters();
-      });
 
       loadTags();
       loadSites();
