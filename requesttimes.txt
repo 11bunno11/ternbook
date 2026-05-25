@@ -54,3 +54,5 @@ crawl requested on 2026-05-11 00:30:57 for https://silicajello.neocities.org
 crawl requested on 2026-05-11 00:32:05 for https://silicajello.neocities.org
 crawl requested on 2026-05-11 00:34:36 for https://silicajello.neocities.org
 crawl requested on 2026-05-11 01:04:19 for https://silicajello.neocities.org
+crawl requested on 2026-05-25 01:29:15 for https://silicajello.neocities.org
+crawl requested on 2026-05-25 01:32:48 for https://ternbook.neocities.org
