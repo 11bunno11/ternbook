@@ -4,6 +4,7 @@ import sitesRouter from "./sites";
 import heartbeatRouter from "./heartbeat";
 import searchRouter from "./search";
 import mapRouter from "./map";
+import randomRouter from "./random";
 
 const router: IRouter = Router();
 
@@ -12,5 +13,6 @@ router.use(sitesRouter);
 router.use(heartbeatRouter);
 router.use(searchRouter);
 router.use(mapRouter);
+router.use(randomRouter);
 
 export default router;

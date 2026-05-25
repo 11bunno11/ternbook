@@ -1,0 +1,143 @@
+<!doctype html>
+<html>
+  <head>
+    <title>ternbook / wander</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      body {
+        font-family: monospace;
+        background: #0e0e0e;
+        color: #ddd;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+      }
+
+      nav {
+        position: fixed;
+        top: 16px;
+        left: 16px;
+        font-size: 0.75rem;
+      }
+
+      nav a { color: #444; text-decoration: none; }
+      nav a:hover { color: #aaa; }
+
+      h1 {
+        font-size: 1rem;
+        font-weight: normal;
+        color: #333;
+        letter-spacing: 0.1em;
+      }
+
+      .tag-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      #tag-input {
+        background: #111;
+        border: 1px solid #222;
+        color: #aaa;
+        font-family: monospace;
+        font-size: 0.8rem;
+        padding: 6px 10px;
+        width: 180px;
+        text-align: center;
+      }
+
+      #tag-input:focus { outline: 1px solid #444; }
+      #tag-input::placeholder { color: #333; }
+
+      #wander-btn {
+        background: #0e0e0e;
+        border: 1px solid #333;
+        color: #ccc;
+        font-family: monospace;
+        font-size: 1.4rem;
+        letter-spacing: 0.15em;
+        padding: 18px 48px;
+        cursor: pointer;
+        transition: border-color 0.2s, color 0.2s;
+        user-select: none;
+      }
+
+      #wander-btn:hover {
+        border-color: #666;
+        color: #fff;
+      }
+
+      #wander-btn:active {
+        background: #141414;
+      }
+
+      #status {
+        font-size: 0.7rem;
+        color: #444;
+        min-height: 1.2em;
+        text-align: center;
+      }
+
+      #status.err { color: #7a4a4a; }
+    </style>
+  </head>
+  <body>
+    <nav><a href="/">← directory</a></nav>
+
+    <h1>ternbook / wander</h1>
+
+    <div class="tag-row">
+      <input id="tag-input" type="text" placeholder="tag filter (optional)" spellcheck="false" />
+    </div>
+
+    <button id="wander-btn">wander</button>
+
+    <div id="status"></div>
+
+    <script>
+      const btn    = document.getElementById("wander-btn");
+      const input  = document.getElementById("tag-input");
+      const status = document.getElementById("status");
+
+      // Pre-fill from ?tag= query param
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("tag")) input.value = params.get("tag");
+
+      async function wander() {
+        const tag = input.value.trim();
+        const url = "/api/random" + (tag ? `?tag=${encodeURIComponent(tag)}` : "");
+
+        btn.disabled = true;
+        status.textContent = "…";
+        status.className = "";
+
+        try {
+          const res = await fetch(url);
+          const data = await res.json();
+
+          if (!res.ok) {
+            status.textContent = data.error || "something went wrong";
+            status.className = "err";
+            return;
+          }
+
+          status.textContent = `→ ${data.name}`;
+          window.open(data.url, "_blank", "noopener");
+        } catch {
+          status.textContent = "could not reach the server";
+          status.className = "err";
+        } finally {
+          btn.disabled = false;
+        }
+      }
+
+      btn.addEventListener("click", wander);
+      input.addEventListener("keydown", (e) => { if (e.key === "Enter") wander(); });
+    </script>
+  </body>
+</html>

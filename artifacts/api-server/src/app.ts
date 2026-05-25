@@ -38,6 +38,10 @@ app.get("/map", (_req, res) => {
   res.sendFile(path.join(process.cwd(), "../../map.html"));
 });
 
+app.get("/random", (_req, res) => {
+  res.sendFile(path.join(process.cwd(), "../../random.html"));
+});
+
 app.use("/api", router);
 
 export default app;
