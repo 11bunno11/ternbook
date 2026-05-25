@@ -114,7 +114,7 @@
 
         // Open blank tab immediately (synchronous, inside click handler) so
         // the browser doesn't treat it as a popup and block it.
-        const tab = window.open("", "_blank", "noopener");
+        const tab = window.open("", "_blank");
 
         btn.disabled = true;
         status.textContent = "…";
