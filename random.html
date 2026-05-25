@@ -112,6 +112,10 @@
         const tag = input.value.trim();
         const url = "/api/random" + (tag ? `?tag=${encodeURIComponent(tag)}` : "");
 
+        // Open blank tab immediately (synchronous, inside click handler) so
+        // the browser doesn't treat it as a popup and block it.
+        const tab = window.open("", "_blank", "noopener");
+
         btn.disabled = true;
         status.textContent = "…";
         status.className = "";
@@ -121,14 +125,16 @@
           const data = await res.json();
 
           if (!res.ok) {
+            tab?.close();
             status.textContent = data.error || "something went wrong";
             status.className = "err";
             return;
           }
 
-          status.textContent = `→ ${data.name}`;
-          window.open(data.url, "_blank", "noopener");
+          if (tab) tab.location.href = data.url;
+          status.textContent = "";
         } catch {
+          tab?.close();
           status.textContent = "could not reach the server";
           status.className = "err";
         } finally {
