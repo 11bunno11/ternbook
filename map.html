@@ -1,0 +1,328 @@
+<!doctype html>
+<html>
+  <head>
+    <title>ternbook map</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      body {
+        font-family: monospace;
+        background: #0a0a0a;
+        color: #ddd;
+        overflow: hidden;
+        height: 100vh;
+        width: 100vw;
+      }
+
+      #ui {
+        position: fixed;
+        top: 16px;
+        left: 16px;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      #ui a {
+        color: #555;
+        font-size: 0.75rem;
+        text-decoration: none;
+      }
+
+      #ui a:hover { color: #aaa; }
+
+      #ui h1 {
+        font-size: 1rem;
+        color: #fff;
+        font-weight: normal;
+      }
+
+      #tag-filter {
+        background: #111;
+        border: 1px solid #2a2a2a;
+        color: #ccc;
+        font-family: monospace;
+        font-size: 0.75rem;
+        padding: 5px 8px;
+        min-width: 160px;
+        appearance: none;
+        cursor: pointer;
+      }
+
+      #tag-filter:focus { outline: 1px solid #444; }
+
+      #stats {
+        font-size: 0.65rem;
+        color: #444;
+      }
+
+      #tooltip {
+        position: fixed;
+        background: #111;
+        border: 1px solid #2a2a2a;
+        padding: 10px 12px;
+        font-size: 0.75rem;
+        pointer-events: none;
+        display: none;
+        max-width: 220px;
+        z-index: 20;
+        line-height: 1.5;
+      }
+
+      #tooltip .t-name { color: #7eb8f7; font-size: 0.85rem; }
+      #tooltip .t-desc { color: #666; margin-top: 2px; }
+      #tooltip .t-tags { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 3px; }
+      #tooltip .tag {
+        font-size: 0.6rem;
+        padding: 1px 5px;
+        border-radius: 2px;
+      }
+      #tooltip .tag-user   { background: #1e2a1e; color: #6abf6a; border: 1px solid #2a3e2a; }
+      #tooltip .tag-system { background: #1e1e2e; color: #7a7abf; border: 1px solid #2a2a3e; }
+      #tooltip .t-meta { color: #444; font-size: 0.65rem; margin-top: 4px; }
+
+      svg { display: block; cursor: grab; }
+      svg.dragging { cursor: grabbing; }
+
+      .node circle {
+        stroke-width: 1.5;
+        transition: opacity 0.2s;
+      }
+
+      .node text {
+        font-family: monospace;
+        font-size: 11px;
+        fill: #888;
+        pointer-events: none;
+        transition: opacity 0.2s;
+      }
+
+      .link {
+        stroke: #222;
+        stroke-width: 1;
+        transition: opacity 0.2s;
+      }
+
+      .link.mutual { stroke: #2a3e2a; stroke-width: 1.5; }
+
+      .dimmed { opacity: 0.08 !important; }
+
+      #loading {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #444;
+        font-size: 0.85rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="ui">
+      <div>
+        <h1>ternbook <span style="color:#444">/ map</span></h1>
+        <a href="/">← directory</a>
+      </div>
+      <select id="tag-filter">
+        <option value="">all tags</option>
+      </select>
+      <div id="stats"></div>
+    </div>
+
+    <div id="tooltip"></div>
+    <div id="loading">loading map…</div>
+
+    <svg id="svg"></svg>
+
+    <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+    <script>
+      const svg = d3.select("#svg")
+        .attr("width", window.innerWidth)
+        .attr("height", window.innerHeight);
+
+      const g = svg.append("g");
+
+      const zoom = d3.zoom()
+        .scaleExtent([0.05, 8])
+        .on("zoom", (e) => g.attr("transform", e.transform));
+
+      svg.call(zoom);
+      svg.on("mousedown", () => svg.classed("dragging", true));
+      svg.on("mouseup",   () => svg.classed("dragging", false));
+
+      window.addEventListener("resize", () => {
+        svg.attr("width", window.innerWidth).attr("height", window.innerHeight);
+      });
+
+      const tooltip = document.getElementById("tooltip");
+
+      let allNodes = [], allLinks = [];
+      let activeTag = "";
+
+      async function init() {
+        const res = await fetch("/api/map");
+        const data = await res.json();
+        allNodes = data.nodes;
+        allLinks = data.links;
+
+        document.getElementById("loading").remove();
+        document.getElementById("stats").textContent =
+          `${allNodes.length} sites · ${allLinks.length} links`;
+
+        populateTags();
+        render(allNodes, allLinks);
+      }
+
+      function populateTags() {
+        const tagSet = new Set();
+        allNodes.forEach((n) => {
+          (n.tags || []).forEach((t) => tagSet.add(t));
+          (n.systemTags || []).forEach((t) => tagSet.add(t));
+        });
+
+        const sel = document.getElementById("tag-filter");
+        [...tagSet].sort().forEach((t) => {
+          const opt = document.createElement("option");
+          opt.value = t;
+          opt.textContent = t;
+          sel.appendChild(opt);
+        });
+
+        sel.addEventListener("change", () => {
+          activeTag = sel.value;
+          applyTagFilter();
+        });
+      }
+
+      function applyTagFilter() {
+        if (!activeTag) {
+          d3.selectAll(".node").classed("dimmed", false);
+          d3.selectAll(".link").classed("dimmed", false);
+          return;
+        }
+
+        const visibleIds = new Set(
+          allNodes
+            .filter((n) => [...(n.tags || []), ...(n.systemTags || [])].includes(activeTag))
+            .map((n) => n.id)
+        );
+
+        d3.selectAll(".node").classed("dimmed", function () {
+          return !visibleIds.has(d3.select(this).datum().id);
+        });
+
+        d3.selectAll(".link").classed("dimmed", function () {
+          const d = d3.select(this).datum();
+          return !visibleIds.has(d.source.id ?? d.source) || !visibleIds.has(d.target.id ?? d.target);
+        });
+      }
+
+      function mutualSet(links) {
+        const seen = new Set();
+        const mutuals = new Set();
+        for (const l of links) {
+          const a = l.source, b = l.target;
+          const key1 = `${a}||${b}`, key2 = `${b}||${a}`;
+          if (seen.has(key2)) mutuals.add(key1), mutuals.add(key2);
+          seen.add(key1);
+        }
+        return mutuals;
+      }
+
+      function nodeColor(d) {
+        if (d.systemTags.includes("verified"))         return "#3a6a3a";
+        if (d.systemTags.includes("highly-connected")) return "#3a3a6a";
+        if (d.systemTags.includes("mutual-ring"))      return "#4a3a2a";
+        if (d.systemTags.includes("fresh"))            return "#2a4a3a";
+        return "#222";
+      }
+
+      function nodeStroke(d) {
+        if (d.systemTags.includes("verified"))         return "#6abf6a";
+        if (d.systemTags.includes("highly-connected")) return "#7a7abf";
+        if (d.systemTags.includes("mutual-ring"))      return "#bf9a6a";
+        if (d.systemTags.includes("fresh"))            return "#6abfaa";
+        return "#333";
+      }
+
+      function render(nodes, links) {
+        const mutuals = mutualSet(links.map((l) => ({ source: l.source, target: l.target })));
+
+        const sim = d3.forceSimulation(nodes)
+          .force("link", d3.forceLink(links).id((d) => d.id).distance(80).strength(0.4))
+          .force("charge", d3.forceManyBody().strength(-220))
+          .force("center", d3.forceCenter(window.innerWidth / 2, window.innerHeight / 2))
+          .force("collide", d3.forceCollide().radius((d) => nodeRadius(d) + 6));
+
+        const link = g.append("g")
+          .selectAll("line")
+          .data(links)
+          .join("line")
+          .attr("class", (d) => {
+            const key = `${d.source}||${d.target}`;
+            return "link" + (mutuals.has(key) ? " mutual" : "");
+          });
+
+        const node = g.append("g")
+          .selectAll("g")
+          .data(nodes)
+          .join("g")
+          .attr("class", "node")
+          .call(
+            d3.drag()
+              .on("start", (e, d) => { if (!e.active) sim.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+              .on("drag",  (e, d) => { d.fx = e.x; d.fy = e.y; })
+              .on("end",   (e, d) => { if (!e.active) sim.alphaTarget(0); d.fx = null; d.fy = null; })
+          )
+          .on("click", (_e, d) => window.open(d.url, "_blank", "noopener"))
+          .on("mousemove", (e, d) => {
+            const tags = (d.tags || []).map((t) => `<span class="tag tag-user">${t}</span>`).join("");
+            const sys  = (d.systemTags || []).map((t) => `<span class="tag tag-system">${t}</span>`).join("");
+            tooltip.innerHTML = `
+              <div class="t-name">${esc(d.name)}</div>
+              <div class="t-desc">${esc(d.description || "")}</div>
+              <div class="t-tags">${tags}${sys}</div>
+              <div class="t-meta">${d.neighborCount} neighbors · ${(d.mutuals||[]).length} mutuals</div>
+            `;
+            tooltip.style.display = "block";
+            tooltip.style.left = (e.clientX + 14) + "px";
+            tooltip.style.top  = (e.clientY + 14) + "px";
+          })
+          .on("mouseleave", () => { tooltip.style.display = "none"; });
+
+        node.append("circle")
+          .attr("r", nodeRadius)
+          .attr("fill", nodeColor)
+          .attr("stroke", nodeStroke);
+
+        node.append("text")
+          .attr("x", (d) => nodeRadius(d) + 4)
+          .attr("y", 4)
+          .text((d) => d.name.length > 20 ? d.name.slice(0, 18) + "…" : d.name);
+
+        sim.on("tick", () => {
+          link
+            .attr("x1", (d) => d.source.x)
+            .attr("y1", (d) => d.source.y)
+            .attr("x2", (d) => d.target.x)
+            .attr("y2", (d) => d.target.y);
+
+          node.attr("transform", (d) => `translate(${d.x},${d.y})`);
+        });
+      }
+
+      function nodeRadius(d) {
+        return 5 + Math.min((d.inboundCount || 0) * 1.5 + (d.neighborCount || 0), 20);
+      }
+
+      function esc(str) {
+        return String(str)
+          .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      }
+
+      init();
+    </script>
+  </body>
+</html>

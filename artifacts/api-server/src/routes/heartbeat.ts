@@ -166,6 +166,12 @@ function validateData(data: Record<string, unknown>, baseUrl: string): string | 
     if (typeof data.ial !== "string") return "ial must be a string";
   }
 
+  if (data.map !== undefined && data.map !== null) {
+    if (!["in", "out", "join"].includes(data.map as string)) {
+      return 'map must be "in", "join", or "out"';
+    }
+  }
+
   return null;
 }
 
@@ -296,6 +302,7 @@ router.post("/heartbeat", async (req, res) => {
       neighbors: (data.neighbors as string[]) ?? null,
       ial,
       ialVerified,
+      mapStatus: (data.map as string) ?? null,
       lastSeen: new Date(),
       registeredAt,
     })
@@ -308,6 +315,7 @@ router.post("/heartbeat", async (req, res) => {
         neighbors: (data.neighbors as string[]) ?? null,
         ial,
         ialVerified,
+        mapStatus: (data.map as string) ?? null,
         lastSeen: new Date(),
       },
     });

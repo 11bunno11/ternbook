@@ -34,6 +34,10 @@ app.get("/", (_req, res) => {
   res.sendFile(path.join(process.cwd(), "../../ternbook.html"));
 });
 
+app.get("/map", (_req, res) => {
+  res.sendFile(path.join(process.cwd(), "../../map.html"));
+});
+
 app.use("/api", router);
 
 export default app;
