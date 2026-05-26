@@ -3,7 +3,11 @@
   <head>
     <title>ternbook</title>
     <style>
-      * { box-sizing: border-box; margin: 0; padding: 0; }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
 
       body {
         font-family: monospace;
@@ -19,8 +23,14 @@
         margin-bottom: 24px;
       }
 
-      header h1 { font-size: 1.4rem; color: #fff; }
-      header span { font-size: 0.8rem; color: #555; }
+      header h1 {
+        font-size: 1.4rem;
+        color: #fff;
+      }
+      header span {
+        font-size: 0.8rem;
+        color: #555;
+      }
 
       /* Search */
       .search-row {
@@ -39,8 +49,12 @@
         padding: 7px 10px;
       }
 
-      #search-input:focus { outline: 1px solid #555; }
-      #search-input::placeholder { color: #444; }
+      #search-input:focus {
+        outline: 1px solid #555;
+      }
+      #search-input::placeholder {
+        color: #444;
+      }
 
       #search-btn {
         background: #1e2a1e;
@@ -52,7 +66,9 @@
         cursor: pointer;
       }
 
-      #search-btn:hover { background: #243024; }
+      #search-btn:hover {
+        background: #243024;
+      }
 
       .search-hint {
         font-size: 0.65rem;
@@ -101,7 +117,9 @@
         min-width: 150px;
       }
 
-      select:focus { outline: 1px solid #444; }
+      select:focus {
+        outline: 1px solid #444;
+      }
 
       .filter-reset {
         background: none;
@@ -113,9 +131,16 @@
         cursor: pointer;
       }
 
-      .filter-reset:hover { color: #aaa; border-color: #555; }
+      .filter-reset:hover {
+        color: #aaa;
+        border-color: #555;
+      }
 
-      #count { font-size: 0.75rem; color: #444; margin-bottom: 16px; }
+      #count {
+        font-size: 0.75rem;
+        color: #444;
+        margin-bottom: 16px;
+      }
 
       /* Site grid */
       .sites {
@@ -130,14 +155,19 @@
         background: #121212;
       }
 
-      .site h2 { font-size: 0.95rem; margin-bottom: 4px; }
+      .site h2 {
+        font-size: 0.95rem;
+        margin-bottom: 4px;
+      }
 
       .site h2 a {
         color: #7eb8f7;
         text-decoration: none;
       }
 
-      .site h2 a:hover { text-decoration: underline; }
+      .site h2 a:hover {
+        text-decoration: underline;
+      }
 
       .site .desc {
         font-size: 0.78rem;
@@ -146,7 +176,12 @@
         line-height: 1.4;
       }
 
-      .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+      .tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-bottom: 6px;
+      }
 
       .tag {
         font-size: 0.65rem;
@@ -154,11 +189,25 @@
         border-radius: 2px;
       }
 
-      .tag-user   { background: #1e2a1e; color: #6abf6a; border: 1px solid #2a3e2a; }
-      .tag-system { background: #1e1e2e; color: #7a7abf; border: 1px solid #2a2a3e; }
+      .tag-user {
+        background: #1e2a1e;
+        color: #6abf6a;
+        border: 1px solid #2a3e2a;
+      }
+      .tag-system {
+        background: #1e1e2e;
+        color: #7a7abf;
+        border: 1px solid #2a2a3e;
+      }
 
-      .site .meta { font-size: 0.65rem; color: #444; margin-top: 6px; }
-      .site .meta span + span::before { content: " · "; }
+      .site .meta {
+        font-size: 0.65rem;
+        color: #444;
+        margin-top: 6px;
+      }
+      .site .meta span + span::before {
+        content: " · ";
+      }
 
       .no-results {
         color: #444;
@@ -178,46 +227,63 @@
         vertical-align: middle;
       }
 
-      .mode-badge.search { border-color: #2a3e2a; color: #6abf6a; background: #1e2a1e; }
+      .mode-badge.search {
+        border-color: #2a3e2a;
+        color: #6abf6a;
+        background: #1e2a1e;
+      }
     </style>
   </head>
   <body>
     <header>
       <h1>ternbook</h1>
       <span>a web directory</span>
+      <span><a style="color: darkgray" href="/random">random</a></span>
+      <span><a style="color: darkgray" href="/map">map</a></span>
     </header>
 
     <!-- Search -->
     <div class="search-row">
-      <input id="search-input" type="text" placeholder='search…  try: tag:blog,coding  desc:recipes  -is:ghostsite  OR' spellcheck="false" />
+      <input
+        id="search-input"
+        type="text"
+        placeholder="search…  try: tag:blog,coding  desc:recipes  -is:ghostsite  OR"
+        spellcheck="false"
+      />
       <button id="search-btn">search</button>
     </div>
     <div class="search-hint">
-      <code>tag:a,b</code> match tags &nbsp;
-      <code>title:word</code> match name &nbsp;
-      <code>desc:word</code> match description &nbsp;
-      <code>is:verified</code> system tag &nbsp;
-      <code>-tag:nsfw</code> exclude &nbsp;
-      <code>OR</code> any instead of all
+      <code>tag:a,b</code> match tags &nbsp; <code>title:word</code> match name
+      &nbsp; <code>desc:word</code> match description &nbsp;
+      <code>is:verified</code> system tag &nbsp; <code>-tag:nsfw</code> exclude
+      &nbsp; <code>OR</code> any instead of all
     </div>
 
     <!-- Dropdown filters -->
     <div class="filters">
       <div class="filter-group">
         <label>Core Content</label>
-        <select id="f-core"><option value="">All</option></select>
+        <select id="f-core">
+          <option value="">All</option>
+        </select>
       </div>
       <div class="filter-group">
         <label>Vibe / Web Culture</label>
-        <select id="f-vibe"><option value="">All</option></select>
+        <select id="f-vibe">
+          <option value="">All</option>
+        </select>
       </div>
       <div class="filter-group">
         <label>Content Safety</label>
-        <select id="f-safety"><option value="">All</option></select>
+        <select id="f-safety">
+          <option value="">All</option>
+        </select>
       </div>
       <div class="filter-group">
         <label>Ternbook Native</label>
-        <select id="f-system"><option value="">All</option></select>
+        <select id="f-system">
+          <option value="">All</option>
+        </select>
       </div>
       <button class="filter-reset" id="reset">reset all</button>
     </div>
@@ -233,8 +299,8 @@
       async function loadTags() {
         const res = await fetch("/api/tags");
         const tags = await res.json();
-        populate("f-core",   tags.coreContent);
-        populate("f-vibe",   tags.vibeWebCulture);
+        populate("f-core", tags.coreContent);
+        populate("f-vibe", tags.vibeWebCulture);
         populate("f-safety", tags.contentSafety);
         populate("f-system", tags.systemTags);
       }
@@ -247,7 +313,10 @@
           opt.textContent = t;
           sel.appendChild(opt);
         });
-        sel.addEventListener("change", () => { clearSearch(); applyDropdowns(); });
+        sel.addEventListener("change", () => {
+          clearSearch();
+          applyDropdowns();
+        });
       }
 
       function getDropdownTags() {
@@ -258,22 +327,32 @@
 
       function applyDropdowns() {
         const active = getDropdownTags();
-        const results = active.length === 0
-          ? allSites
-          : allSites.filter((site) => {
-              const siteTags = new Set([...(site.tags || []), ...(site.systemTags || [])]);
-              return active.every((t) => siteTags.has(t));
-            });
+        const results =
+          active.length === 0
+            ? allSites
+            : allSites.filter((site) => {
+                const siteTags = new Set([
+                  ...(site.tags || []),
+                  ...(site.systemTags || []),
+                ]);
+                return active.every((t) => siteTags.has(t));
+              });
         renderSites(results, false);
       }
 
       // ── Search ───────────────────────────────────────────────────────
       async function runSearch() {
         const q = document.getElementById("search-input").value.trim();
-        if (!q) { clearSearch(); applyDropdowns(); return; }
+        if (!q) {
+          clearSearch();
+          applyDropdowns();
+          return;
+        }
 
         const res = await fetch("/api/search?q=" + encodeURIComponent(q));
-        if (!res.ok) { return; }
+        if (!res.ok) {
+          return;
+        }
         const data = await res.json();
         searchMode = true;
         renderSites(data.results, true);
@@ -284,11 +363,18 @@
         document.getElementById("search-input").value = "";
       }
 
-      document.getElementById("search-btn").addEventListener("click", runSearch);
-      document.getElementById("search-input").addEventListener("keydown", (e) => {
-        if (e.key === "Enter") runSearch();
-        if (e.key === "Escape") { clearSearch(); applyDropdowns(); }
-      });
+      document
+        .getElementById("search-btn")
+        .addEventListener("click", runSearch);
+      document
+        .getElementById("search-input")
+        .addEventListener("keydown", (e) => {
+          if (e.key === "Enter") runSearch();
+          if (e.key === "Escape") {
+            clearSearch();
+            applyDropdowns();
+          }
+        });
 
       // ── Reset ────────────────────────────────────────────────────────
       document.getElementById("reset").addEventListener("click", () => {
@@ -307,7 +393,7 @@
 
         const badge = isSearch
           ? '<span class="mode-badge search">search results</span>'
-          : '';
+          : "";
         count.innerHTML = `${sites.length} site${sites.length !== 1 ? "s" : ""}${badge}`;
 
         if (sites.length === 0) {
@@ -317,9 +403,11 @@
 
         sites.forEach((site) => {
           const userTags = (site.tags || [])
-            .map((t) => `<span class="tag tag-user">${esc(t)}</span>`).join("");
+            .map((t) => `<span class="tag tag-user">${esc(t)}</span>`)
+            .join("");
           const systemTags = (site.systemTags || [])
-            .map((t) => `<span class="tag tag-system">${esc(t)}</span>`).join("");
+            .map((t) => `<span class="tag tag-system">${esc(t)}</span>`)
+            .join("");
           const mutualCount = (site.mutuals || []).length;
 
           const div = document.createElement("div");
