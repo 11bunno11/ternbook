@@ -23,13 +23,19 @@ function loadExceptions(): string[] {
   }
 }
 
-function generateIAL(url: string, registeredAt: Date): string {
+/** Epoch increments by 1 every 2 calendar months (Jan+Feb = same epoch, etc.) */
+function currentEpoch(): number {
+  const now = new Date();
+  return Math.floor((now.getUTCFullYear() * 12 + now.getUTCMonth()) / 2);
+}
+
+function generateIAL(url: string, registeredAt: Date, epoch: number): string {
   const secret = process.env.IAL_SECRET;
   if (!secret) throw new Error("IAL_SECRET environment variable is not set");
   const hostname = new URL(url).hostname;
   return crypto
     .createHmac("sha256", secret)
-    .update(hostname + registeredAt.toISOString())
+    .update(`${hostname}${registeredAt.toISOString()}:${epoch}`)
     .digest("hex");
 }
 
@@ -271,14 +277,16 @@ router.post("/heartbeat", async (req, res) => {
     .where(eq(sitesTable.url, normalizedUrl));
 
   const registeredAt = currentSite?.registeredAt ?? new Date();
-  const ial = generateIAL(normalizedUrl, registeredAt);
+  const epoch = currentEpoch();
+  const ial     = generateIAL(normalizedUrl, registeredAt, epoch);
+  const prevIal = generateIAL(normalizedUrl, registeredAt, epoch - 1);
 
   const sentIAL = (data.ial as string) ?? null;
-  if (sentIAL && sentIAL !== ial) {
-    res.status(403).json({ error: "ial code mismatch" });
+  if (sentIAL && sentIAL !== ial && sentIAL !== prevIal) {
+    res.status(403).json({ error: "ial code mismatch — your ial may be from a previous epoch, use the prevIal value from your last heartbeat response to update it" });
     return;
   }
-  const ialVerified = sentIAL === ial;
+  const ialVerified = sentIAL === ial || sentIAL === prevIal;
 
   if (currentSite === undefined) {
     const [ialConflict] = await db
@@ -326,7 +334,7 @@ router.post("/heartbeat", async (req, res) => {
     `crawl requested on ${timestamp} for ${normalizedUrl}\n`
   );
 
-  res.json({ ok: true, url: normalizedUrl, ial, ialVerified });
+  res.json({ ok: true, url: normalizedUrl, ial, prevIal, epoch, ialVerified });
 });
 
 export default router;
