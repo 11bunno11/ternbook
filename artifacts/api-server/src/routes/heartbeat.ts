@@ -8,6 +8,7 @@ import fs from "fs";
 import path from "path";
 import net from "net";
 import { getUserTags } from "../tags.js";
+import { currentEpoch } from "../lib/epoch.js";
 
 const router: IRouter = Router();
 const RATE_LIMIT_MS = 12 * 60 * 60 * 1000;
@@ -21,12 +22,6 @@ function loadExceptions(): string[] {
   } catch {
     return [];
   }
-}
-
-/** Epoch increments by 1 every 2 calendar months (Jan+Feb = same epoch, etc.) */
-function currentEpoch(): number {
-  const now = new Date();
-  return Math.floor((now.getUTCFullYear() * 12 + now.getUTCMonth()) / 2);
 }
 
 function generateIAL(url: string, registeredAt: Date, epoch: number): string {

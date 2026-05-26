@@ -31,7 +31,7 @@ export function getUserTags(): Set<string> {
 export const SYSTEM_TAGS = new Set([
   "orphaned", "highly-connected", "mutual-ring", "hidden-gem",
   "verified", "ghostsite", "island", "fresh", "ancient",
-  "just-updated", "12-hours-ago", "24-hours-ago",
+  "just-updated", "12-hours-ago", "24-hours-ago", "external",
 ]);
 
 const FRESH_MS         = 7  * 24 * 60 * 60 * 1000;
@@ -59,6 +59,7 @@ export function computeSystemTags(
     else if (sinceLastSeen < TWELVE_HOURS_MS)  tags.push("12-hours-ago");
     else if (sinceLastSeen < TWENTY_FOUR_MS)   tags.push("24-hours-ago");
   }
+  if (site.sourceInstance)                          tags.push("external");
   if (site.ialVerified)                             tags.push("verified");
   if (age < FRESH_MS)                               tags.push("fresh");
   if (age > ANCIENT_MS)                             tags.push("ancient");

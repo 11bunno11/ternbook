@@ -4,6 +4,7 @@ import pinoHttp from "pino-http";
 import path from "path";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { startGossipScheduler } from "./lib/gossipScheduler";
 
 const app: Express = express();
 
@@ -43,5 +44,7 @@ app.get("/random", (_req, res) => {
 });
 
 app.use("/api", router);
+
+startGossipScheduler();
 
 export default app;

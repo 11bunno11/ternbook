@@ -11,6 +11,7 @@ export const sitesTable = pgTable("sites", {
   mapStatus: text("map_status"),
   lastSeen: timestamp("last_seen", { withTimezone: true }),
   registeredAt: timestamp("registered_at", { withTimezone: true }).defaultNow().notNull(),
+  sourceInstance: text("source_instance"),
 });
 
 export type Site = typeof sitesTable.$inferSelect;
