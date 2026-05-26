@@ -97,6 +97,8 @@ router.post("/gossip/receive", async (req, res) => {
     try { parsedUrl = new URL(url); } catch { continue; }
     if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") continue;
 
+    const normalizedUrl = url.replace(/\/+$/, "");
+
     const lastSeen = typeof last_heartbeat_at === "string"
       ? new Date(last_heartbeat_at)
       : new Date();
@@ -108,7 +110,7 @@ router.post("/gossip/receive", async (req, res) => {
     const result = await db
       .insert(sitesTable)
       .values({
-        url,
+        url: normalizedUrl,
         name: hostname,
         lastSeen,
         sourceInstance: origin,

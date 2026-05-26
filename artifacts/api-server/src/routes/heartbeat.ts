@@ -9,6 +9,7 @@ import path from "path";
 import net from "net";
 import { getUserTags } from "../tags.js";
 import { currentEpoch } from "../lib/epoch.js";
+import { invalidateGraphCache } from "../lib/enrichSites.js";
 
 const router: IRouter = Router();
 const RATE_LIMIT_MS = 12 * 60 * 60 * 1000;
@@ -322,6 +323,8 @@ router.post("/heartbeat", async (req, res) => {
         lastSeen: new Date(),
       },
     });
+
+  invalidateGraphCache();
 
   const timestamp = new Date().toISOString().replace("T", " ").slice(0, 19);
   fs.appendFileSync(

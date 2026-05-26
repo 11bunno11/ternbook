@@ -34,42 +34,35 @@ export const SYSTEM_TAGS = new Set([
   "just-updated", "12-hours-ago", "24-hours-ago", "external",
 ]);
 
-const FRESH_MS         = 7  * 24 * 60 * 60 * 1000;
-const ANCIENT_MS       = 365 * 24 * 60 * 60 * 1000;
-const GHOST_MS         = 90  * 24 * 60 * 60 * 1000;
-const ONE_HOUR_MS      = 1       * 60 * 60 * 1000;
-const TWELVE_HOURS_MS  = 12      * 60 * 60 * 1000;
-const TWENTY_FOUR_MS   = 24      * 60 * 60 * 1000;
+const FRESH_MS        = 7   * 24 * 60 * 60 * 1000;
+const ANCIENT_MS      = 365 * 24 * 60 * 60 * 1000;
+const GHOST_MS        = 90  * 24 * 60 * 60 * 1000;
+const ONE_HOUR_MS     = 1   * 60 * 60 * 1000;
+const TWELVE_HOURS_MS = 12  * 60 * 60 * 1000;
+const TWENTY_FOUR_MS  = 24  * 60 * 60 * 1000;
 
-export function computeSystemTags(
+/**
+ * Structural tags depend on the graph topology (neighbors / inbound links).
+ * Cached and recomputed on a background interval — not on every request.
+ */
+export function computeStructuralTags(
   site: Site & { mutuals: string[] },
   inboundMap: Map<string, string[]>,
   neighborSets: Map<string, Set<string>>,
-  now: Date,
 ): string[] {
   const tags: string[] = [];
   const inbound   = inboundMap.get(site.url) ?? [];
   const neighbors = site.neighbors ?? [];
   const { mutuals } = site;
-  const age = now.getTime() - (site.registeredAt?.getTime() ?? now.getTime());
 
-  if (site.lastSeen) {
-    const sinceLastSeen = now.getTime() - site.lastSeen.getTime();
-    if (sinceLastSeen < ONE_HOUR_MS)     tags.push("just-updated");
-    else if (sinceLastSeen < TWELVE_HOURS_MS)  tags.push("12-hours-ago");
-    else if (sinceLastSeen < TWENTY_FOUR_MS)   tags.push("24-hours-ago");
-  }
-  if (site.sourceInstance)                          tags.push("external");
-  if (site.ialVerified)                             tags.push("verified");
-  if (age < FRESH_MS)                               tags.push("fresh");
-  if (age > ANCIENT_MS)                             tags.push("ancient");
-  if (!site.lastSeen || now.getTime() - site.lastSeen.getTime() > GHOST_MS)
-                                                    tags.push("ghostsite");
-  if (inbound.length === 0)                         tags.push("orphaned");
-  if (inbound.length >= 5)                          tags.push("highly-connected");
+  if (inbound.length === 0)                        tags.push("orphaned");
+  if (inbound.length >= 5)                         tags.push("highly-connected");
   if (inbound.length <= 2 && mutuals.length >= 1)  tags.push("hidden-gem");
-  if (mutuals.length >= 3 && neighbors.length > 0 && mutuals.length === neighbors.length)
-                                                    tags.push("mutual-ring");
+  if (
+    mutuals.length >= 3 &&
+    neighbors.length > 0 &&
+    mutuals.length === neighbors.length
+  )                                                tags.push("mutual-ring");
 
   if (neighbors.length > 0) {
     const cluster = new Set([site.url, ...neighbors]);
@@ -88,4 +81,41 @@ export function computeSystemTags(
   }
 
   return tags;
+}
+
+/**
+ * Dynamic tags depend only on per-site attributes and wall-clock time.
+ * Computed fresh on every read — cheap, no graph traversal.
+ */
+export function computeDynamicTags(site: Site, now: Date): string[] {
+  const tags: string[] = [];
+  const age = now.getTime() - (site.registeredAt?.getTime() ?? now.getTime());
+
+  if (site.lastSeen) {
+    const since = now.getTime() - site.lastSeen.getTime();
+    if (since < ONE_HOUR_MS)          tags.push("just-updated");
+    else if (since < TWELVE_HOURS_MS) tags.push("12-hours-ago");
+    else if (since < TWENTY_FOUR_MS)  tags.push("24-hours-ago");
+  }
+  if (site.sourceInstance)  tags.push("external");
+  if (site.ialVerified)     tags.push("verified");
+  if (age < FRESH_MS)       tags.push("fresh");
+  if (age > ANCIENT_MS)     tags.push("ancient");
+  if (!site.lastSeen || now.getTime() - site.lastSeen.getTime() > GHOST_MS)
+                            tags.push("ghostsite");
+
+  return tags;
+}
+
+/** Convenience wrapper — combines both. Used only where the full graph is already in memory. */
+export function computeSystemTags(
+  site: Site & { mutuals: string[] },
+  inboundMap: Map<string, string[]>,
+  neighborSets: Map<string, Set<string>>,
+  now: Date,
+): string[] {
+  return [
+    ...computeStructuralTags(site, inboundMap, neighborSets),
+    ...computeDynamicTags(site, now),
+  ];
 }

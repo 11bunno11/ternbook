@@ -5,6 +5,7 @@ import path from "path";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { startGossipScheduler } from "./lib/gossipScheduler";
+import { startGraphCacheRefresh } from "./lib/enrichSites";
 
 const app: Express = express();
 
@@ -46,5 +47,6 @@ app.get("/random", (_req, res) => {
 app.use("/api", router);
 
 startGossipScheduler();
+startGraphCacheRefresh();
 
 export default app;
