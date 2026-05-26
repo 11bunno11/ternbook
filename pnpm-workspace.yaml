@@ -52,7 +52,7 @@ catalog:
   '@vitejs/plugin-react': ^5.0.4
   class-variance-authority: ^0.7.1
   clsx: ^2.1.1
-  drizzle-orm: ^0.45.1
+  drizzle-orm: ^0.45.2
   framer-motion: ^12.23.24
   lucide-react: ^0.545.0
   # Must be this exact version because expo requires it
@@ -62,7 +62,7 @@ catalog:
   tailwind-merge: ^3.3.1
   tailwindcss: ^4.1.14
   tsx: ^4.21.0
-  vite: ^7.3.0
+  vite: ^7.3.2
   zod: ^3.25.76
 
 autoInstallPeers: false
@@ -157,3 +157,22 @@ overrides:
   # drizzle-kit uses esbuild internally on an older version that's vulnerable, this overrides it
   "@esbuild-kit/esm-loader": "npm:tsx@^4.21.0"
   esbuild: "0.27.3"
+  # Security: patch transitive vulnerable dependencies
+  # picomatch 2.x (via fast-glob>micromatch) - ReDoS + POSIX class injection (GHSA-c2c7-rcm5-vvqj, GHSA-3v7f-55p6-f55p)
+  "micromatch>picomatch": "^2.3.2"
+  # picomatch 4.x (via vite) - same CVEs
+  "vite>picomatch": ">=4.0.4"
+  # path-to-regexp (via express>router) - DoS via sequential optional groups (GHSA-j3q9-mxjg-w52f, GHSA-27v5-c462-wpq7)
+  path-to-regexp: ">=8.4.0"
+  # lodash (via recharts) - code injection + prototype pollution (GHSA-r5fr-rjxr-66jc, GHSA-f23m-r3pf-42rh)
+  lodash: ">=4.18.0"
+  # fast-uri - vulnerabilities GHSA-q3j6-qgpj-74h6, GHSA-v39h-62p7-jpjc
+  fast-uri: ">=3.1.1"
+  # yaml (via vite) - stack overflow via deeply nested YAML (GHSA-48c2-rrv3-qjmp)
+  yaml: ">=2.8.3"
+  # brace-expansion (via orval>typedoc>minimatch) - GHSA-f886-m6hf-6m8v
+  brace-expansion: ">=2.0.3"
+  # qs (via express) - DoS via stringify crash (GHSA-q8mj-m7cp-5q26)
+  qs: ">=6.15.2"
+  # postcss (via vite) - XSS via unescaped </style> (GHSA-qx2v-qp2m-jg93)
+  postcss: ">=8.5.10"
