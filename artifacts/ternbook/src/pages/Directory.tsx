@@ -57,18 +57,24 @@ export default function Directory() {
   );
 
   useEffect(() => {
+    // 1. Get a safe reference to the array right away
+    const rawSitesArray = sitesData?.sites || [];
+
     if (!activeSearch && sitesData) {
       if (page === 1) {
-        setAllSites(sitesData.sites);
+        setAllSites(rawSitesArray);
       } else {
         setAllSites((prev) => {
-          const newSites = sitesData.sites.filter(
+          // 2. Safely call filter on our guaranteed array
+          const newSites = rawSitesArray.filter(
             (s) => !prev.some((p) => p.id === s.id),
           );
           return [...prev, ...newSites];
         });
       }
-      setTotalCount(sitesData.total);
+
+      // 3. Optional chain the pagination fields just to be absolutely bulletproof
+      setTotalCount(sitesData.total || 0);
       setHasMore(sitesData.page < sitesData.pages);
     }
   }, [sitesData, page, activeSearch]);
