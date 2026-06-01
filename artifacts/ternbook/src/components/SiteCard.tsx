@@ -1,4 +1,4 @@
-import { Site } from "@workspace/api-client-react/src/generated/api.schemas";
+import type { Site } from "@workspace/api-client-react";
 
 export function SiteCard({ site }: { site: Site }) {
   const mutualCount = (site.mutuals || []).length;
