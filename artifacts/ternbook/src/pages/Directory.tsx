@@ -133,7 +133,9 @@ export default function Directory() {
     setSearchQuery("");
   };
 
-  const displayedSites = activeSearch ? searchData?.results || [] : allSites;
+  const displayedSites = activeSearch
+    ? searchData?.results || []
+    : allSites || [];
   const displayedTotal = activeSearch ? searchData?.count || 0 : totalCount;
   const isLoading = activeSearch ? isSearchFetching : isSitesFetching;
 
@@ -274,7 +276,7 @@ export default function Directory() {
         ))}
       </div>
 
-      {displayedSites.length === 0 && !isLoading && (
+      {displayedSites?.length === 0 && !isLoading && (
         <div className="text-sm text-muted-foreground py-10">
           no sites match
         </div>
