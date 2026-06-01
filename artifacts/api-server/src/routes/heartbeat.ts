@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { sitesTable } from "@workspace/db/schema";
-import { eq, and, ne } from "drizzle-orm";
+import { eq, and, ne, gt } from "drizzle-orm";
 import crypto from "crypto";
 import dns from "dns";
 import fs from "fs";
@@ -268,7 +268,7 @@ router.post("/heartbeat", async (req, res) => {
   }
 
   const [currentSite] = await db
-    .select({ registeredAt: sitesTable.registeredAt, ial: sitesTable.ial })
+    .select({ registeredAt: sitesTable.registeredAt, ial: sitesTable.ial, genesisEpoch: sitesTable.genesisEpoch })
     .from(sitesTable)
     .where(eq(sitesTable.url, normalizedUrl));
 
@@ -284,14 +284,39 @@ router.post("/heartbeat", async (req, res) => {
   }
   const ialVerified = sentIAL === ial || sentIAL === prevIal;
 
+  // Genesis Lineage Lock: existing site — check if its current IAL collides with a
+  // *newer* site's stored IAL. An old site cannot crowd out a newer site's identity.
+  if (currentSite !== undefined) {
+    const [newerConflict] = await db
+      .select({ url: sitesTable.url })
+      .from(sitesTable)
+      .where(and(
+        eq(sitesTable.ial, ial),
+        ne(sitesTable.url, normalizedUrl),
+        gt(sitesTable.genesisEpoch, currentSite.genesisEpoch),
+      ));
+
+    if (newerConflict) {
+      res.status(409).json({ error: "Great Scott!" });
+      return;
+    }
+  }
+
+  // New site — check for any IAL collision; Genesis Lineage Lock decides the error message.
   if (currentSite === undefined) {
     const [ialConflict] = await db
-      .select({ url: sitesTable.url })
+      .select({ url: sitesTable.url, genesisEpoch: sitesTable.genesisEpoch })
       .from(sitesTable)
       .where(and(eq(sitesTable.ial, ial), ne(sitesTable.url, normalizedUrl)));
 
     if (ialConflict) {
-      res.status(409).json({ error: "ial code conflict with an existing site" });
+      if (ialConflict.genesisEpoch > epoch) {
+        // Conflicting site was registered in a future epoch — should be impossible,
+        // but if it ever happens the new registrant loses.
+        res.status(409).json({ error: "Great Scott!" });
+      } else {
+        res.status(409).json({ error: "ial code conflict with an existing site" });
+      }
       return;
     }
   }
@@ -309,6 +334,7 @@ router.post("/heartbeat", async (req, res) => {
       mapStatus: (data.map as string) ?? null,
       lastSeen: new Date(),
       registeredAt,
+      genesisEpoch: epoch,
     })
     .onConflictDoUpdate({
       target: sitesTable.url,
@@ -321,6 +347,7 @@ router.post("/heartbeat", async (req, res) => {
         ialVerified,
         mapStatus: (data.map as string) ?? null,
         lastSeen: new Date(),
+        // genesisEpoch intentionally excluded — immutable after first registration
       },
     });
 

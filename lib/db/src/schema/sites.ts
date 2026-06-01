@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, integer } from "drizzle-orm/pg-core";
 
 export const sitesTable = pgTable("sites", {
   url: text("url").primaryKey(),
@@ -12,6 +12,8 @@ export const sitesTable = pgTable("sites", {
   lastSeen: timestamp("last_seen", { withTimezone: true }),
   registeredAt: timestamp("registered_at", { withTimezone: true }).defaultNow().notNull(),
   sourceInstance: text("source_instance"),
+  /** Genesis Lineage Lock — epoch when this site first registered. Immutable. */
+  genesisEpoch: integer("genesis_epoch").notNull().default(0),
 });
 
 export type Site = typeof sitesTable.$inferSelect;
