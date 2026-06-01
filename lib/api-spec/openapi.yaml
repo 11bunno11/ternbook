@@ -3,13 +3,23 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: ternbook API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: sites
+    description: Site directory operations
+  - name: map
+    description: Graph map operations
+  - name: search
+    description: Search operations
+  - name: tags
+    description: Tag operations
+  - name: heartbeat
+    description: Site registration and heartbeat
 paths:
   /healthz:
     get:
@@ -24,13 +34,336 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /sites:
+    get:
+      operationId: listSites
+      tags: [sites]
+      summary: List sites
+      description: Paginated list of verified/visible sites
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: tags
+          in: query
+          schema:
+            type: string
+          description: Comma-separated tags to filter by
+        - name: match
+          in: query
+          schema:
+            type: string
+            enum: [all, any]
+            default: all
+      responses:
+        "200":
+          description: Paginated site list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SitePage"
+
+  /search:
+    get:
+      operationId: searchSites
+      tags: [search]
+      summary: Search sites
+      description: Full-text and structured search across all sites
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResults"
+
+  /map:
+    get:
+      operationId: getMap
+      tags: [map]
+      summary: Get graph map data
+      description: Returns nodes and links for the force-directed graph
+      responses:
+        "200":
+          description: Map data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MapData"
+
+  /random:
+    get:
+      operationId: getRandomSite
+      tags: [sites]
+      summary: Get a random site URL
+      parameters:
+        - name: tag
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Random site URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RandomSite"
+        "404":
+          description: No sites found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /tags:
+    get:
+      operationId: getTags
+      tags: [tags]
+      summary: Get all available tags grouped by category
+      responses:
+        "200":
+          description: Tag groups
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TagGroups"
+
+  /heartbeat:
+    post:
+      operationId: heartbeat
+      tags: [heartbeat]
+      summary: Register or update a site
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HeartbeatInput"
+      responses:
+        "200":
+          description: Heartbeat accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HeartbeatResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: IAL verification failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    Site:
+      type: object
+      required: [id, url, name, description, tags, systemTags, neighbors, mutuals, ialVerified, registeredAt, lastSeen]
+      properties:
+        id:
+          type: integer
+        url:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        systemTags:
+          type: array
+          items:
+            type: string
+        neighbors:
+          type: array
+          items:
+            type: string
+        mutuals:
+          type: array
+          items:
+            type: string
+        ialVerified:
+          type: boolean
+        registeredAt:
+          type: string
+          format: date-time
+        lastSeen:
+          type: string
+          format: date-time
+
+    SitePage:
+      type: object
+      required: [sites, total, page, limit, pages]
+      properties:
+        sites:
+          type: array
+          items:
+            $ref: "#/components/schemas/Site"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+        pages:
+          type: integer
+
+    SearchResults:
+      type: object
+      required: [query, count, results]
+      properties:
+        query:
+          type: object
+          additionalProperties: true
+        count:
+          type: integer
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/Site"
+
+    MapNode:
+      type: object
+      required: [id, url, name, description, tags, systemTags, neighborCount, inboundCount]
+      properties:
+        id:
+          type: integer
+        url:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        systemTags:
+          type: array
+          items:
+            type: string
+        neighborCount:
+          type: integer
+        inboundCount:
+          type: integer
+        mutuals:
+          type: array
+          items:
+            type: string
+
+    MapLink:
+      type: object
+      required: [source, target]
+      properties:
+        source:
+          type: ["integer", "null"]
+        target:
+          type: ["integer", "null"]
+
+    MapData:
+      type: object
+      required: [nodes, links]
+      properties:
+        nodes:
+          type: array
+          items:
+            $ref: "#/components/schemas/MapNode"
+        links:
+          type: array
+          items:
+            $ref: "#/components/schemas/MapLink"
+
+    RandomSite:
+      type: object
+      required: [url, name]
+      properties:
+        url:
+          type: string
+        name:
+          type: string
+
+    TagGroups:
+      type: object
+      required: [coreContent, vibeWebCulture, contentSafety, systemTags]
+      properties:
+        coreContent:
+          type: array
+          items:
+            type: string
+        vibeWebCulture:
+          type: array
+          items:
+            type: string
+        contentSafety:
+          type: array
+          items:
+            type: string
+        systemTags:
+          type: array
+          items:
+            type: string
+
+    HeartbeatInput:
+      type: object
+      required: [url, name, description, ial]
+      properties:
+        url:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        ial:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        neighbors:
+          type: array
+          items:
+            type: string
+
+    HeartbeatResponse:
+      type: object
+      required: [ok, site]
+      properties:
+        ok:
+          type: boolean
+        site:
+          $ref: "#/components/schemas/Site"
+
+    ApiError:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string

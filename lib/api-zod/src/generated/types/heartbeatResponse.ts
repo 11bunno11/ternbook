@@ -5,7 +5,9 @@
  * ternbook API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { Site } from "./site";
 
-export interface HealthStatus {
-  status: string;
+export interface HeartbeatResponse {
+  ok: boolean;
+  site: Site;
 }

@@ -1,0 +1,119 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-card-border: var(--card-border);
+
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover-border: var(--popover-border);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --font-sans: var(--app-font-mono);
+  --font-serif: var(--app-font-mono);
+  --font-mono: var(--app-font-mono);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --background: #0e0e0e;
+  --foreground: #dddddd;
+  --border: #222222;
+  --input: #1a1a1a;
+  --ring: #555555;
+  
+  --card: #121212;
+  --card-foreground: #dddddd;
+  --card-border: #222222;
+
+  --popover: #111111;
+  --popover-foreground: #dddddd;
+  --popover-border: #2a2a2a;
+
+  --primary: #6abf6a;
+  --primary-foreground: #0e0e0e;
+  
+  --secondary: #1a1a1a;
+  --secondary-foreground: #cccccc;
+  
+  --muted: #1e1e1e;
+  --muted-foreground: #777777;
+
+  --accent: #1e2a1e;
+  --accent-foreground: #6abf6a;
+
+  --destructive: #7a4a4a;
+  --destructive-foreground: #dddddd;
+
+  --app-font-mono: "ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", monospace;
+  --radius: 0px; 
+}
+
+.dark {
+  --background: #0e0e0e;
+  --foreground: #dddddd;
+  --border: #222222;
+  --input: #1a1a1a;
+  --ring: #555555;
+  
+  --card: #121212;
+  --card-foreground: #dddddd;
+  --card-border: #222222;
+
+  --popover: #111111;
+  --popover-foreground: #dddddd;
+  --popover-border: #2a2a2a;
+
+  --primary: #6abf6a;
+  --primary-foreground: #0e0e0e;
+  
+  --secondary: #1a1a1a;
+  --secondary-foreground: #cccccc;
+  
+  --muted: #1e1e1e;
+  --muted-foreground: #777777;
+
+  --accent: #1e2a1e;
+  --accent-foreground: #6abf6a;
+
+  --destructive: #7a4a4a;
+  --destructive-foreground: #dddddd;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply font-mono antialiased bg-background text-foreground selection:bg-primary selection:text-primary-foreground;
+  }
+}
