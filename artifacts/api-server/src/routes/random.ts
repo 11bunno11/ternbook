@@ -7,13 +7,14 @@ router.get("/random", async (req, res) => {
   const tag = typeof req.query.tag === "string" ? req.query.tag.trim().toLowerCase() : null;
 
   const sites = await fetchEnrichedSites();
+  const visible = sites.filter((s) => !s.isHidden);
 
   const pool = tag
-    ? sites.filter((s) => {
+    ? visible.filter((s) => {
         const all = new Set([...(s.tags ?? []), ...s.systemTags]);
         return all.has(tag);
       })
-    : sites;
+    : visible;
 
   if (pool.length === 0) {
     res.status(404).json({ error: tag ? `no sites found with tag "${tag}"` : "no sites in the directory" });

@@ -232,6 +232,15 @@
         color: #6abf6a;
         background: #1e2a1e;
       }
+
+      #sentinel {
+        grid-column: 1 / -1;
+        text-align: center;
+        font-size: 0.7rem;
+        color: #333;
+        padding: 24px 0 40px;
+        min-height: 64px;
+      }
     </style>
   </head>
   <body>
@@ -290,17 +299,121 @@
 
     <div id="count"></div>
     <div class="sites" id="sites"></div>
+    <div id="sentinel"></div>
 
     <script>
-      let allSites = [];
-      let searchMode = false;
+      const PAGE_SIZE = 20;
+      let currentPage  = 0;
+      let currentTotal = 0;
+      let currentTags  = [];
+      let isLoading    = false;
+      let hasMore      = true;
+      let searchMode   = false;
+      let observer     = null;
+
+      const container = document.getElementById("sites");
+      const countEl   = document.getElementById("count");
+      const sentinel  = document.getElementById("sentinel");
+
+      // ── Helpers ──────────────────────────────────────────────────────
+      function esc(str) {
+        return String(str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function makeSiteCard(site) {
+        const userTags   = (site.tags || []).map((t) => `<span class="tag tag-user">${esc(t)}</span>`).join("");
+        const systemTags = (site.systemTags || []).map((t) => `<span class="tag tag-system">${esc(t)}</span>`).join("");
+        const mutualCount = (site.mutuals || []).length;
+        const div = document.createElement("div");
+        div.className = "site";
+        div.innerHTML = `
+          <h2><a href="${esc(site.url)}" target="_blank" rel="noopener">${esc(site.name)}</a></h2>
+          <p class="desc">${esc(site.description || "")}</p>
+          <div class="tags">${userTags}${systemTags}</div>
+          <div class="meta">
+            <span>${(site.neighbors || []).length} neighbors</span>
+            ${mutualCount ? `<span>${mutualCount} mutual${mutualCount !== 1 ? "s" : ""}</span>` : ""}
+          </div>
+        `;
+        return div;
+      }
+
+      function updateCount(badge) {
+        const n = searchMode ? currentTotal : currentTotal;
+        countEl.innerHTML = `${n} site${n !== 1 ? "s" : ""}${badge || ""}`;
+      }
+
+      function setSentinel(text) {
+        sentinel.textContent = text;
+      }
+
+      // ── Lazy load (browse mode) ───────────────────────────────────────
+      function setupObserver() {
+        if (observer) observer.disconnect();
+        observer = new IntersectionObserver((entries) => {
+          if (entries[0].isIntersecting && !isLoading && hasMore && !searchMode) {
+            loadNextPage();
+          }
+        }, { rootMargin: "300px" });
+        observer.observe(sentinel);
+      }
+
+      async function loadNextPage() {
+        if (isLoading || !hasMore) return;
+        isLoading = true;
+        setSentinel("loading…");
+
+        try {
+          const tagParam  = currentTags.length > 0 ? `&tags=${currentTags.join(",")}&match=all` : "";
+          const res       = await fetch(`/api/sites?page=${currentPage + 1}&limit=${PAGE_SIZE}${tagParam}`);
+          const data      = await res.json();
+
+          currentPage  = data.page;
+          currentTotal = data.total;
+          hasMore      = data.page < data.pages;
+
+          if (currentPage === 1 && data.sites.length === 0) {
+            container.innerHTML = '<p class="no-results">no sites match</p>';
+            updateCount("");
+            setSentinel("");
+            return;
+          }
+
+          const frag = document.createDocumentFragment();
+          data.sites.forEach((s) => frag.appendChild(makeSiteCard(s)));
+          container.appendChild(frag);
+
+          updateCount("");
+          setSentinel(hasMore ? "" : "— end of directory —");
+        } catch {
+          setSentinel("failed to load — try refreshing");
+        } finally {
+          isLoading = false;
+        }
+      }
+
+      function resetAndLoad(tags) {
+        searchMode   = false;
+        currentPage  = 0;
+        currentTotal = 0;
+        currentTags  = tags;
+        hasMore      = true;
+        container.innerHTML = "";
+        setSentinel("");
+        setupObserver();
+        loadNextPage();
+      }
 
       // ── Tag dropdowns ────────────────────────────────────────────────
       async function loadTags() {
-        const res = await fetch("/api/tags");
+        const res  = await fetch("/api/tags");
         const tags = await res.json();
-        populate("f-core", tags.coreContent);
-        populate("f-vibe", tags.vibeWebCulture);
+        populate("f-core",   tags.coreContent);
+        populate("f-vibe",   tags.vibeWebCulture);
         populate("f-safety", tags.contentSafety);
         populate("f-system", tags.systemTags);
       }
@@ -315,7 +428,7 @@
         });
         sel.addEventListener("change", () => {
           clearSearch();
-          applyDropdowns();
+          resetAndLoad(getDropdownTags());
         });
       }
 
@@ -325,56 +438,49 @@
           .filter(Boolean);
       }
 
-      function applyDropdowns() {
-        const active = getDropdownTags();
-        const results =
-          active.length === 0
-            ? allSites
-            : allSites.filter((site) => {
-                const siteTags = new Set([
-                  ...(site.tags || []),
-                  ...(site.systemTags || []),
-                ]);
-                return active.every((t) => siteTags.has(t));
-              });
-        renderSites(results, false);
-      }
-
       // ── Search ───────────────────────────────────────────────────────
       async function runSearch() {
         const q = document.getElementById("search-input").value.trim();
-        if (!q) {
-          clearSearch();
-          applyDropdowns();
-          return;
-        }
+        if (!q) { clearSearch(); resetAndLoad(getDropdownTags()); return; }
 
-        const res = await fetch("/api/search?q=" + encodeURIComponent(q));
-        if (!res.ok) {
-          return;
+        if (observer) observer.disconnect();
+        searchMode   = true;
+        isLoading    = true;
+        setSentinel("");
+        container.innerHTML = "";
+
+        try {
+          const res  = await fetch("/api/search?q=" + encodeURIComponent(q));
+          if (!res.ok) return;
+          const data = await res.json();
+
+          currentTotal = data.count;
+          const badge  = '<span class="mode-badge search">search results</span>';
+          updateCount(badge);
+
+          if (data.results.length === 0) {
+            container.innerHTML = '<p class="no-results">no sites match</p>';
+            return;
+          }
+          const frag = document.createDocumentFragment();
+          data.results.forEach((s) => frag.appendChild(makeSiteCard(s)));
+          container.appendChild(frag);
+          setSentinel("— end of search results —");
+        } finally {
+          isLoading = false;
         }
-        const data = await res.json();
-        searchMode = true;
-        renderSites(data.results, true);
       }
 
       function clearSearch() {
-        searchMode = false;
         document.getElementById("search-input").value = "";
+        searchMode = false;
       }
 
-      document
-        .getElementById("search-btn")
-        .addEventListener("click", runSearch);
-      document
-        .getElementById("search-input")
-        .addEventListener("keydown", (e) => {
-          if (e.key === "Enter") runSearch();
-          if (e.key === "Escape") {
-            clearSearch();
-            applyDropdowns();
-          }
-        });
+      document.getElementById("search-btn").addEventListener("click", runSearch);
+      document.getElementById("search-input").addEventListener("keydown", (e) => {
+        if (e.key === "Enter")  runSearch();
+        if (e.key === "Escape") { clearSearch(); resetAndLoad(getDropdownTags()); }
+      });
 
       // ── Reset ────────────────────────────────────────────────────────
       document.getElementById("reset").addEventListener("click", () => {
@@ -382,66 +488,12 @@
           document.getElementById(id).value = "";
         });
         clearSearch();
-        applyDropdowns();
+        resetAndLoad([]);
       });
 
-      // ── Render ───────────────────────────────────────────────────────
-      function renderSites(sites, isSearch) {
-        const container = document.getElementById("sites");
-        const count = document.getElementById("count");
-        container.innerHTML = "";
-
-        const badge = isSearch
-          ? '<span class="mode-badge search">search results</span>'
-          : "";
-        count.innerHTML = `${sites.length} site${sites.length !== 1 ? "s" : ""}${badge}`;
-
-        if (sites.length === 0) {
-          container.innerHTML = '<p class="no-results">no sites match</p>';
-          return;
-        }
-
-        sites.forEach((site) => {
-          const userTags = (site.tags || [])
-            .map((t) => `<span class="tag tag-user">${esc(t)}</span>`)
-            .join("");
-          const systemTags = (site.systemTags || [])
-            .map((t) => `<span class="tag tag-system">${esc(t)}</span>`)
-            .join("");
-          const mutualCount = (site.mutuals || []).length;
-
-          const div = document.createElement("div");
-          div.className = "site";
-          div.innerHTML = `
-            <h2><a href="${esc(site.url)}" target="_blank" rel="noopener">${esc(site.name)}</a></h2>
-            <p class="desc">${esc(site.description || "")}</p>
-            <div class="tags">${userTags}${systemTags}</div>
-            <div class="meta">
-              <span>${(site.neighbors || []).length} neighbors</span>
-              ${mutualCount ? `<span>${mutualCount} mutual${mutualCount !== 1 ? "s" : ""}</span>` : ""}
-            </div>
-          `;
-          container.appendChild(div);
-        });
-      }
-
-      function esc(str) {
-        return String(str)
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;");
-      }
-
       // ── Init ─────────────────────────────────────────────────────────
-      async function loadSites() {
-        const res = await fetch("/api/sites");
-        allSites = await res.json();
-        applyDropdowns();
-      }
-
       loadTags();
-      loadSites();
+      resetAndLoad([]);
     </script>
   </body>
 </html>

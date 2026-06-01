@@ -9,6 +9,7 @@ import { logger } from "./logger.js";
 // ---------------------------------------------------------------------------
 
 const CACHE_TTL_MS = 30 * 60 * 1000;
+const UNVERIFIED_HIDE_MS = 7 * 24 * 60 * 60 * 1000;
 
 interface CachedEntry {
   site: Site;
@@ -94,9 +95,14 @@ export async function fetchEnrichedSites() {
   const { entries } = await getCache();
   const now = new Date();
 
-  return entries.map(({ site, mutuals, structuralTags }) => ({
-    ...site,
-    mutuals,
-    systemTags: [...structuralTags, ...computeDynamicTags(site, now)],
-  }));
+  return entries.map(({ site, mutuals, structuralTags }) => {
+    const age = now.getTime() - (site.registeredAt?.getTime() ?? 0);
+    const isHidden = !site.ialVerified && age > UNVERIFIED_HIDE_MS;
+    return {
+      ...site,
+      mutuals,
+      systemTags: [...structuralTags, ...computeDynamicTags(site, now)],
+      isHidden,
+    };
+  });
 }

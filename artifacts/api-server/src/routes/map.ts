@@ -7,7 +7,7 @@ const MAP_IN = new Set(["in", "join"]);
 
 router.get("/map", async (_req, res) => {
   const all = await fetchEnrichedSites();
-  const onMap = all.filter((s) => s.mapStatus && MAP_IN.has(s.mapStatus));
+  const onMap = all.filter((s) => !s.isHidden && s.mapStatus && MAP_IN.has(s.mapStatus));
   const onMapUrls = new Set(onMap.map((s) => s.url));
 
   const nodes = onMap.map((s) => ({
