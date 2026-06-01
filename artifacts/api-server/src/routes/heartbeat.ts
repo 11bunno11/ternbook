@@ -177,7 +177,7 @@ function validateData(data: Record<string, unknown>, baseUrl: string): string | 
   return null;
 }
 
-async function fetchSiteData(baseUrl: string) {
+async function fetchSiteData(baseUrl: string): Promise<Record<string, unknown>> {
   const res = await fetch(baseUrl + "/.well-known/ternbook.json", {
     headers: { Accept: "application/json" },
     signal: AbortSignal.timeout(5000),
@@ -198,7 +198,7 @@ async function fetchSiteData(baseUrl: string) {
   // Re-check resolved IP after redirect in case it landed on a different host
   await resolveAndCheckIP(finalUrl.hostname);
 
-  return res.json();
+  return res.json() as Promise<Record<string, unknown>>;
 }
 
 router.post("/heartbeat", async (req, res) => {

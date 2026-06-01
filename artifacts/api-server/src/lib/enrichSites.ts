@@ -44,7 +44,7 @@ async function buildCache(): Promise<GraphCache> {
 
   const entries: CachedEntry[] = sites.map((site) => {
     const mutuals = (site.neighbors ?? []).filter(
-      (n) => neighborSets.get(n)?.has(site.url) ?? false,
+      (n: string) => neighborSets.get(n)?.has(site.url) ?? false,
     );
     const structuralTags = computeStructuralTags(
       { ...site, mutuals },
