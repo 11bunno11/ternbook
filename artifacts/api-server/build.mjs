@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { build as esbuild } from "esbuild";
 import esbuildPluginPino from "esbuild-plugin-pino";
 import { rm } from "node:fs/promises";
+import { build as viteBuild } from "vite";
 
 // Plugins (e.g. 'esbuild-plugin-pino') may use `require` to resolve dependencies
 globalThis.require = createRequire(import.meta.url);
@@ -13,6 +14,21 @@ const artifactDir = path.dirname(fileURLToPath(import.meta.url));
 async function buildAll() {
   const distDir = path.resolve(artifactDir, "dist");
   await rm(distDir, { recursive: true, force: true });
+
+  if (process.env.NODE_ENV === "production") {
+    const ternbookRoot = path.resolve(artifactDir, "../ternbook");
+    console.log("Building frontend…");
+    await viteBuild({
+      configFile: path.resolve(ternbookRoot, "vite.config.ts"),
+      root: ternbookRoot,
+      build: {
+        outDir: path.resolve(distDir, "public"),
+        emptyOutDir: true,
+      },
+      mode: "production",
+    });
+    console.log("Frontend built → dist/public/");
+  }
 
   await esbuild({
     entryPoints: [path.resolve(artifactDir, "src/index.ts")],

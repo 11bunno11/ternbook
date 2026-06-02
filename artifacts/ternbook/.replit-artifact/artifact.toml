@@ -18,13 +18,22 @@ localPort = 18715
 run = "pnpm --filter @workspace/ternbook run dev"
 
 [services.production]
-build = [ "pnpm", "--filter", "@workspace/ternbook", "run", "build" ]
-publicDir = "artifacts/ternbook/dist/public"
-serve = "static"
 
-[[services.production.rewrites]]
-from = "/*"
-to = "/index.html"
+[services.production.build]
+args = ["pnpm", "--filter", "@workspace/api-server", "run", "build"]
+
+[services.production.build.env]
+NODE_ENV = "production"
+
+[services.production.run]
+args = ["node", "--enable-source-maps", "artifacts/api-server/dist/index.mjs"]
+
+[services.production.run.env]
+PORT = "18715"
+NODE_ENV = "production"
+
+[services.production.health.startup]
+path = "/api/healthz"
 
 [services.env]
 PORT = "18715"
