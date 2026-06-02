@@ -5,6 +5,7 @@ import { gte, sql } from "drizzle-orm";
 import fs from "fs";
 import path from "path";
 import { currentEpoch } from "../lib/epoch.js";
+import { loadBlacklist } from "../lib/blacklist.js";
 
 const router: IRouter = Router();
 
@@ -87,17 +88,20 @@ router.post("/gossip/receive", async (req, res) => {
   let accepted = 0;
   let skipped  = 0;
 
+  const blacklist = loadBlacklist();
+
   for (const entry of sites) {
     if (!entry || typeof entry !== "object") continue;
     const { url, last_heartbeat_at } = entry as Record<string, unknown>;
 
     if (typeof url !== "string") continue;
 
+    const normalizedUrl = url.replace(/\/+$/, "");
+    if (blacklist.has(normalizedUrl)) { skipped++; continue; }
+
     let parsedUrl: URL;
     try { parsedUrl = new URL(url); } catch { continue; }
     if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") continue;
-
-    const normalizedUrl = url.replace(/\/+$/, "");
 
     const lastSeen = typeof last_heartbeat_at === "string"
       ? new Date(last_heartbeat_at)

@@ -10,6 +10,7 @@ import net from "net";
 import { getUserTags } from "../tags.js";
 import { currentEpoch } from "../lib/epoch.js";
 import { invalidateGraphCache } from "../lib/enrichSites.js";
+import { isBlacklisted } from "../lib/blacklist.js";
 
 const router: IRouter = Router();
 const RATE_LIMIT_MS = 12 * 60 * 60 * 1000;
@@ -223,6 +224,11 @@ router.post("/heartbeat", async (req, res) => {
   }
 
   const normalizedUrl = url.replace(/\/+$/, "");
+
+  if (isBlacklisted(normalizedUrl)) {
+    res.status(403).json({ error: "this site has been blacklisted from ternbook" });
+    return;
+  }
 
   // Resolve DNS and reject private IPs before making any request
   try {
