@@ -95,7 +95,7 @@ export async function fetchEnrichedSites() {
   const { entries } = await getCache();
   const now = new Date();
 
-  return entries.map(({ site, mutuals, structuralTags }) => {
+  const enriched = entries.map(({ site, mutuals, structuralTags }) => {
     const age = now.getTime() - (site.registeredAt?.getTime() ?? 0);
     const isHidden = !site.ialVerified && age > UNVERIFIED_HIDE_MS;
     return {
@@ -104,5 +104,12 @@ export async function fetchEnrichedSites() {
       systemTags: [...structuralTags, ...computeDynamicTags(site, now)],
       isHidden,
     };
+  });
+
+  // Sort by activity date (most recently seen sites at the top)
+  return enriched.sort((a, b) => {
+    const timeA = a.lastSeen ? new Date(a.lastSeen).getTime() : 0;
+    const timeB = b.lastSeen ? new Date(b.lastSeen).getTime() : 0;
+    return timeB - timeA; // Newest activity goes first
   });
 }
