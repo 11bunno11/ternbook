@@ -16,7 +16,7 @@ In-line with that spirit of transparency: about 98% of the codebase is generated
 using LLM based coding agents (Replit agent) with the remaining 2% consisting of 
 human architectural design, testing, and fine-tuning.
 
-As a solo humanities-based programmer, using AI allowed me to create Ternbook fast enough (would've taken ages if I did it by myself)
+As a solo humanities-based programmer, using AI allowed me to create Ternbook with minimal programming knowledge, which allowed me to think on other features Ternbook needed (would've taken ages if I did the coding by myself)
 
 Every single feature was thoroughly reviewed, integrated, and deployed to production 
 by a human (me!!!!). The system design is real, the protocol works, and the code is 
