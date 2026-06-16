@@ -16,10 +16,7 @@ In-line with that spirit of transparency: about 98% of the codebase is generated
 using LLM based coding agents (Replit agent) with the remaining 2% consisting of 
 human architectural design, testing, and fine-tuning.
 
-As a solo humanities-based programmer, using AI allowed me to safely implement
-robust security primitives (like RFC 1918 private IP filtering, SSRF guards, and 
-HMAC-SHA256 token validation) that could in some cases require a whole team of 
-expert security researchers.
+As a solo humanities-based programmer, using AI allowed me to create Ternbook fast enough (would've taken ages if I did it by myself)
 
 Every single feature was thoroughly reviewed, integrated, and deployed to production 
 by a human (me!!!!). The system design is real, the protocol works, and the code is 
@@ -28,7 +25,7 @@ that it works!!
 
 ##  Getting Started!!
 
-This project is optimized to be run on Replit and Render (for now, if you manged to like
+This project is optimized to be run on Replit and Render (for now, if you managed to like
 run on another service LMK and I'll update the README).
 
 ### Prerequisites
