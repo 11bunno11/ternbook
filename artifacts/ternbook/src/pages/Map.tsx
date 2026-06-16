@@ -165,6 +165,7 @@ export default function Map() {
       .attr("fill", nodeColor)
       .attr("stroke", nodeStroke)
       .attr("stroke-width", 1.5)
+      .attr("class", (d: any) => d.systemTags?.includes("fresh") ? "node-fresh" : "")
       .style(
         "transition",
         "opacity 0.2s, stroke 0.2s, stroke-width 0.2s, filter 0.2s",
