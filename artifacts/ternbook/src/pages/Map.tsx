@@ -168,7 +168,10 @@ export default function Map() {
       .style(
         "transition",
         "opacity 0.2s, stroke 0.2s, stroke-width 0.2s, filter 0.2s",
-      );
+      )
+      .classed("just-updated",        (d: any) => d.systemTags?.includes("just-updated"))
+      .classed("twelve-hours-ago",    (d: any) => d.systemTags?.includes("12-hours-ago"))
+      .classed("twenty-four-hours-ago",(d: any) => d.systemTags?.includes("24-hours-ago"));
     
     node
       .append("text")
@@ -181,7 +184,7 @@ export default function Map() {
       .style("transition", "opacity 0.2s")
       .text((d: any) =>
         d.name.length > 20 ? d.name.slice(0, 18) + "…" : d.name,
-      );
+      );F.appe
 
     sim.on("tick", () => {
       link
