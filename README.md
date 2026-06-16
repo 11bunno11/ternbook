@@ -2,6 +2,9 @@
 
 Ternbook is a web directory made for the modern internet. It is easy to get onto, and has features like Webmaps and instance gossiping.
 
+This page is meant for developers who want to make their own Ternbook instance.
+For people who want to add their website to a Ternbook instance, check [here](https://ternbook.neocities.org).
+
 <img width="2157" height="1363" alt="IMG_0732" src="https://github.com/user-attachments/assets/9c4ffcc5-c110-4db3-af0e-09c7a7f04b14" />
 
 This page is meant for developers who want to make their own Ternbook instance.
