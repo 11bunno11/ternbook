@@ -159,7 +159,7 @@ export default function Map() {
 
     nodeSelectionRef.current = node as any;
 
-   node
+    node
       .append("circle")
       .attr("r", nodeRadius)
       .attr("fill", nodeColor)
@@ -168,8 +168,8 @@ export default function Map() {
       .style(
         "transition",
         "opacity 0.2s, stroke 0.2s, stroke-width 0.2s, filter 0.2s",
-      )
-    
+      );
+
     node
       .append("text")
       .attr("x", (d: any) => nodeRadius(d) + 4)
@@ -181,7 +181,7 @@ export default function Map() {
       .style("transition", "opacity 0.2s")
       .text((d: any) =>
         d.name.length > 20 ? d.name.slice(0, 18) + "…" : d.name,
-      );F.appe
+      );
 
     sim.on("tick", () => {
       link
