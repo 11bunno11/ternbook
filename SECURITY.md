@@ -15,3 +15,5 @@ If you found any security issues, contact me [here](mailto:11bunno11@gmail.com?s
 Expect a delay of up to a week. I will explicitly tell you
 
 whether a vulnerability has been accepted or declined.
+
+Please do not disclose security vulnerabilities publicly until a fix is available.
