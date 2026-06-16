@@ -1,0 +1,1 @@
+Contributions, bug reports, and feature requests are completely welcome! I'll prioritize bug reports and high quality Pull Requests. If you want a feature to be made, fork the Repo and make the thing you want to have on Ternbook, and open a PR (some may be rejected). Alternatively, do discussions, and if many agree on a feature to be implemented, I might make it real.
