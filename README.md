@@ -137,7 +137,9 @@ on a feature to be implemented, I might make it real.
 
 
 ## Security Concerns
-If you found any security issues, contact me [here](mailto:11bunno11@gmail.com?subject=Ternbook%20Security%20Issue) and I'll look into it.
+If you found any security issues, contact me [here](mailto:11bunno11@gmail.com?subject=Ternbook%20Security%20Issue&body=Description%20of%20Vulnerability%3A%0A%0A%0ASteps%20to%20Reproduce%20%2F%20PoC%3A%0A%0A%0AThreat%20Impact%3A) and I'll look into it. 
+
+Look at [SECURITY.md](SECURITY.md) for more precise info.
 
 ## 📝 License
 This project is licensed under the AGPLv3 License - see the LICENSE file for details.
