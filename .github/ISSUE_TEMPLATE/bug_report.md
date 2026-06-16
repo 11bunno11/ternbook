@@ -8,8 +8,9 @@ assignees: ''
 ---
 
 **Describe the bug**
-A clear and concise description of what the bug is. Keep in mind that if theres any
-empty or vague sections, the bug report may be rejected.
+A clear and concise description of what the bug is.
+> [!IMPORTANT]
+> If there are any empty, incomplete, or vague sections, this bug report may be automatically closed or rejected. Please provide thorough data!
 
 **Steps To Reproduce**
 Steps to reproduce the behavior:
@@ -22,7 +23,7 @@ Steps to reproduce the behavior:
 A clear and concise description of what you expected to happen.
 
 **Impact**
-Explain what may happen if the bug remained to be active.
+Explain what may happen to the instance, the user experience, or the network gossip if this bug remains active.
 
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
@@ -30,6 +31,10 @@ If applicable, add screenshots to help explain your problem.
 **Context Details:**
  - Instance URL: [e.g., https://ternbook.onrender.com or a custom instance]
  - Specific Site URL involved (if applicable): [e.g., https://ternbook.neocities.org]
+> [!IMPORTANT]
+> Please check if the ternbook.json syntax is correct before adding your website.
+> Some issues may be from your side, rather than the instance.
+
 
 **Your Environment (please complete the following information):**
  - Device: [e.g. iPhone6, PC]
