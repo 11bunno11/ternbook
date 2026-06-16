@@ -27,6 +27,10 @@ Explain what may happen if the bug remained to be active.
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
 
+**Context Details:**
+ - Instance URL: [e.g., https://ternbook.onrender.com or a custom instance]
+ - Specific Site URL involved (if applicable): [e.g., https://ternbook.neocities.org]
+
 **Your Environment (please complete the following information):**
  - Device: [e.g. iPhone6, PC]
  - OS: [e.g. iOS8.1, Windows 10, MacOS Big Sur]
