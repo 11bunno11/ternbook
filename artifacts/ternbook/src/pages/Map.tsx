@@ -160,19 +160,16 @@ export default function Map() {
     nodeSelectionRef.current = node as any;
 
    node
-     .append("circle")
-     .attr("r", nodeRadius)
-     .attr("fill", nodeColor)
-     .attr("stroke", nodeStroke)
-     .attr("stroke-width", 1.5)
-     .classed("just-updated",          (d: any) => d.systemTags?.includes("just-updated"))
-     .classed("twelve-hours-ago",     (d: any) => d.systemTags?.includes("12-hours-ago"))
-     .classed("twenty-four-hours-ago",(d: any) => d.systemTags?.includes("24-hours-ago"))
-     .style(
-       "transition",
-       "opacity 0.2s, stroke 0.2s, stroke-width 0.2s, filter 0.2s",
-     );
-
+      .append("circle")
+      .attr("r", nodeRadius)
+      .attr("fill", nodeColor)
+      .attr("stroke", nodeStroke)
+      .attr("stroke-width", 1.5)
+      .style(
+        "transition",
+        "opacity 0.2s, stroke 0.2s, stroke-width 0.2s, filter 0.2s",
+      );
+    
     node
       .append("text")
       .attr("x", (d: any) => nodeRadius(d) + 4)
