@@ -16,7 +16,8 @@ API Endpoints (/api/*)
 | **POST** |	`/api/gossip/receive` |	Accept a heartbeat bundle from a federated instance |
 
 Heartbeat (POST /api/heartbeat)
-Sites call this to register or renew. The server fetches and validates /.well-known/ternbook.json from the site before accepting.
+Sites call this to register or renew. The server fetches and 
+<br>validates /.well-known/ternbook.json from the site before accepting.
 
 ternbook.json schema:
 
@@ -34,26 +35,31 @@ ternbook.json schema:
 
 Protections on heartbeat:
 
-DNS resolution + private IP rejection (SSRF guard)
-Rate limit: one heartbeat per site per 12 hours (exceptions.json override)
-IAL (Identity Assurance Layer) token rotation per epoch
-Genesis Lineage Lock prevents token squatting
-Blacklist check → 403
+- DNS resolution + private IP rejection (SSRF guard)
+- Rate limit: one heartbeat per site per 12 hours (exceptions.json override)
+- IAL (Identity Assurance Layer) token rotation per epoch
+- Genesis Lineage Lock prevents token squatting
+- Blacklist check → 403
+
 Database Schema (sites table)
-Column	Type	Notes
-url	text (PK)	Normalized, no trailing slash
-name	text	Max 64 chars
-description	text	Max 256 chars
-tags	text[]	User-chosen, from allowed list
-neighbors	text[]	Outbound links declared by the site
-ial	text	HMAC-SHA256 identity token
-ialVerified	boolean	True if site sent a matching IAL
-mapStatus	text	in, out, or join
-lastSeen	timestamp	Last heartbeat or gossip update
-registeredAt	timestamp	Immutable — first registration
-genesisEpoch	integer	Epoch at first registration
-sourceInstance	text	Which federated instance introduced the site
+
+| Column | Type |	Notes |
+| :--- | :--- | :--- |
+| url |	text |	(PK)	Normalized, no trailing slash |
+| name |	text	|	Max 64 chars |
+| description |	text	|	Max 256 chars |
+| tags |	text[]	|	User-chosen, from allowed list |
+| neighbors |	text[]	|	Outbound links declared by the site |
+| ial |	text	|	HMAC-SHA256 identity token |
+| ialVerified |	boolean	|	True if site sent a matching IAL |
+| mapStatus |	text	|	in, out, or join |
+| lastSeen |	timestamp	|	Last heartbeat or gossip update |
+| registeredAt |	timestamp	|	Immutable — first registration |
+| genesisEpoch |	integer	|	Epoch at first registration |
+| sourceInstance |	text	|	Which federated instance introduced the site |
+
 Search Syntax (GET /api/search?q=...)
+
 Operator	Example	Matches
 Plain	pixel art	Name, description
 tag:	tag:blog	Sites with that tag
