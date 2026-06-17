@@ -71,6 +71,7 @@ Sites call this to register or renew. The server fetches and
 | `tag:` |	`tag:blog` |	Sites with that tag |
 | `title:` |	`title:garden` |	Name field only |
 | `is:verified` |	`is:verified` |	IAL-verified sites only |
+| `-tag:` |	`-tag:nsfw` |	Removes specified tag from result |
 
 ## Frontend Pages
 | Route	| Page	| Description |
