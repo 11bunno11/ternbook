@@ -97,7 +97,7 @@ Sites call this to register or renew. The server fetches and
 ## Deployment
 - **Single process in production** — Express serves the Vite-built frontend as static files + a SPA catch-all, plus all API routes
 - **Dev (Replit)** — two separate processes: Express on port 8080, Vite on port 18715
-- **Dev (standalone / Render local)** — dev:standalone runs Express + Vite middleware on a single port
+- **Dev (standalone / Render local)** — `dev:standalone` runs Express + Vite middleware on a single port
 - **Build:** `pnpm install && NODE_ENV=production pnpm --filter @workspace/api-server run build`
 - **Start:** `node --enable-source-maps artifacts/api-server/dist/index.mjs`
 - **Required** `env vars: DATABASE_URL, SESSION_SECRET, IAL_SECRET, TERNBOOK_ORIGIN (for gossip)`
