@@ -14,10 +14,7 @@ For people who want to add their website to a Ternbook instance, check [here](ht
 Ternbook is an open-source protocol built for the human, anti-algorithmic web.
 In-line with that spirit of transparency: about 98% of the codebase is generated 
 using LLM based coding agents (Replit agent) with the remaining 2% consisting of 
-human architectural design, testing, and fine-tuning.
-
-As a solo humanities-based programmer, using AI allowed me to create Ternbook with minimal programming knowledge, which allowed me to think on other features Ternbook needed (would've taken ages if I did the coding by myself)
-
+human architectural design, testing, and fine-tuning.<br>
 Every single feature was thoroughly reviewed, integrated, and deployed to production 
 by a human (me!!!!). The system design is real, the protocol works, and the code is 
 fully audited for your self-hosting peace of mind. The Render page is the "proof" 
@@ -113,7 +110,8 @@ Make sure to set .env variables or else Ternbook can't function!
    ```
 
 ##  API Endpoints (`/api/*`)
-
+> [!NOTE]
+> For the full specifications, check [here](SPECSHEET.md).
 | Method | Path | Purpose |
 | :--- | :--- | :--- |
 | **GET** | `/api/healthz` | Health check |
@@ -141,4 +139,4 @@ If you found any security issues, contact me [here](mailto:11bunno11@gmail.com?s
 Look at [SECURITY.md](SECURITY.md) for more precise info.
 
 ## 📝 License
-This project is licensed under the AGPLv3 License - see the LICENSE file for details.
+This project is licensed under the AGPLv3 License - see the [LICENSE](LICENSE.md) file for details.
