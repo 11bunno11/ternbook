@@ -94,7 +94,7 @@ Sites call this to register or renew. The server fetches and
 | `gossip.json`	| Federation peer lists (send + receive) |
 | `requesttimes.txt`	| Append-only log of every heartbeat request |
 
-Deployment
+## Deployment
 - **Single process in production** — Express serves the Vite-built frontend as static files + a SPA catch-all, plus all API routes
 - **Dev (Replit)** — two separate processes: Express on port 8080, Vite on port 18715
 - **Dev (standalone / Render local)** — dev:standalone runs Express + Vite middleware on a single port
