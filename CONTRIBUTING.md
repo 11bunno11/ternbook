@@ -13,6 +13,6 @@ I’ll prioritize:
 - Well-scoped PRs that match the project direction
 
 ## Feature Requests 
-If you want a feature, feel free to fork the repo and implement it.
-Open a PR once you're done — it might not always get merged.
+If you want a feature, feel free to fork the repo and implement it.<br>
+Open a PR once you're done — it might not always get merged.<br>
 If a feature gets enough support in discussions, I may implement it or approve a PR for it.
