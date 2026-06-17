@@ -112,6 +112,7 @@ Make sure to set .env variables or else Ternbook can't function!
 ##  API Endpoints (`/api/*`)
 > [!NOTE]
 > For the full specifications, check [here](SPECSHEET.md).
+
 | Method | Path | Purpose |
 | :--- | :--- | :--- |
 | **GET** | `/api/healthz` | Health check |
