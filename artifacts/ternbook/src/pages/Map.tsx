@@ -174,7 +174,7 @@ export default function Map() {
       .append("text")
       .attr("x", (d: any) => nodeRadius(d) + 4)
       .attr("y", 4)
-      .style("font-family", "monospace")
+      .style("font-family", "Courier")
       .style("font-size", "11px")
       .style("fill", "#888")
       .style("pointer-events", "none")
