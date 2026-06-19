@@ -57,7 +57,7 @@ Sites call this to register or renew. The server fetches and
 | `neighbors` |	text[]	|	Outbound links declared by the site |
 | `ial` |	text	|	HMAC-SHA256 identity token |
 | `ialVerified` |	boolean	|	True if site sent a matching IAL |
-| `mapStatus` |	text	|	in, out, or join |
+| `mapStatus` |	text	|	in/join or out |
 | `lastSeen` |	timestamp	|	Last heartbeat or gossip update |
 | `registeredAt` |	timestamp	|	Immutable — first registration |
 | `genesisEpoch` |	integer	|	Epoch at first registration |
