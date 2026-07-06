@@ -14,7 +14,7 @@ export default function Map() {
     const style = document.createElement("style");
     style.id = MAP_ANIMATION_STYLE_ID;
     style.textContent = `
-      @keyframes pulse-halo { 0%,100%{opacity:0;stroke-width:2} 50%{opacity:0.75;stroke-width:6} }
+      @keyframes pulse-node { 0%,100%{opacity:0.35} 50%{opacity:1} }
     `;
     document.head.appendChild(style);
     return () => { document.getElementById(MAP_ANIMATION_STYLE_ID)?.remove(); };
@@ -172,32 +172,21 @@ export default function Map() {
 
     nodeSelectionRef.current = node as any;
 
-    // Halo circle — pulses behind the main node; opacity-only so it works in Safari
-    node
-      .append("circle")
-      .attr("class", "node-halo")
-      .attr("r", (d: any) => nodeRadius(d) + 5)
-      .attr("fill", "none")
-      .attr("stroke", nodeStroke)
-      .attr("stroke-width", 2)
-      .style("pointer-events", "none")
-      .style("animation", (d: any) => {
-        const dur = d.systemTags?.includes("just-updated")  ? 5
-          : d.systemTags?.includes("12-hours-ago") ? 10
-          : d.systemTags?.includes("24-hours-ago") ? 15
-          : 30 + Math.random() * 30;
-        const delay = -(Math.random() * dur);
-        return `pulse-halo ${dur.toFixed(1)}s ease-in-out ${delay.toFixed(2)}s infinite`;
-      });
-
-    // Main circle — static appearance, no animation
     node
       .append("circle")
       .attr("r", nodeRadius)
       .attr("fill", nodeColor)
       .attr("stroke", nodeStroke)
       .attr("stroke-width", 1.5)
-      .style("transition", "opacity 0.2s, stroke 0.2s, stroke-width 0.2s");
+      .style("animation", (d: any) => {
+        const dur = d.systemTags?.includes("just-updated")  ? 5
+          : d.systemTags?.includes("12-hours-ago") ? 10
+          : d.systemTags?.includes("24-hours-ago") ? 15
+          : 30 + Math.random() * 30;
+        const delay = -(Math.random() * dur);
+        return `pulse-node ${dur.toFixed(1)}s ease-in-out ${delay.toFixed(2)}s infinite`;
+      })
+      .style("transition", "stroke 0.2s, stroke-width 0.2s");
 
     node
       .append("text")
