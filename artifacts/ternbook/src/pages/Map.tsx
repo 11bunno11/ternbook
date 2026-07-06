@@ -14,11 +14,7 @@ export default function Map() {
     const style = document.createElement("style");
     style.id = MAP_ANIMATION_STYLE_ID;
     style.textContent = `
-      @keyframes pulse-verified  { 0%,100%{filter:drop-shadow(0 0 2px #6abf6a)} 50%{filter:drop-shadow(0 0 10px #6abf6a)} }
-      @keyframes pulse-connected { 0%,100%{filter:drop-shadow(0 0 2px #7a7abf)} 50%{filter:drop-shadow(0 0 10px #7a7abf)} }
-      @keyframes pulse-mutual    { 0%,100%{filter:drop-shadow(0 0 2px #bf9a6a)} 50%{filter:drop-shadow(0 0 10px #bf9a6a)} }
-      @keyframes pulse-fresh     { 0%,100%{filter:drop-shadow(0 0 2px #6abfaa)} 50%{filter:drop-shadow(0 0 10px #6abfaa)} }
-      @keyframes pulse-default   { 0%,100%{opacity:0.45} 50%{opacity:1} }
+      @keyframes pulse-halo { 0%,100%{opacity:0;stroke-width:2} 50%{opacity:0.75;stroke-width:6} }
     `;
     document.head.appendChild(style);
     return () => { document.getElementById(MAP_ANIMATION_STYLE_ID)?.remove(); };
@@ -176,25 +172,31 @@ export default function Map() {
 
     nodeSelectionRef.current = node as any;
 
+    // Halo circle — pulses behind the main node; opacity-only so it works in Safari
+    node
+      .append("circle")
+      .attr("class", "node-halo")
+      .attr("r", (d: any) => nodeRadius(d) + 5)
+      .attr("fill", "none")
+      .attr("stroke", nodeStroke)
+      .attr("stroke-width", 2)
+      .style("pointer-events", "none")
+      .style("animation", (d: any) => {
+        const dur = d.systemTags?.includes("just-updated")  ? 5
+          : d.systemTags?.includes("12-hours-ago") ? 10
+          : d.systemTags?.includes("24-hours-ago") ? 15
+          : 30 + Math.random() * 30;
+        const delay = -(Math.random() * dur);
+        return `pulse-halo ${dur.toFixed(1)}s ease-in-out ${delay.toFixed(2)}s infinite`;
+      });
+
+    // Main circle — static appearance, no animation
     node
       .append("circle")
       .attr("r", nodeRadius)
       .attr("fill", nodeColor)
       .attr("stroke", nodeStroke)
       .attr("stroke-width", 1.5)
-      .style("animation", (d: any) => {
-        const name = d.systemTags?.includes("verified")        ? "pulse-verified"
-          : d.systemTags?.includes("highly-connected") ? "pulse-connected"
-          : d.systemTags?.includes("mutual-ring")      ? "pulse-mutual"
-          : d.systemTags?.includes("fresh")            ? "pulse-fresh"
-          : "pulse-default";
-        const dur = d.systemTags?.includes("just-updated")  ? 5
-          : d.systemTags?.includes("12-hours-ago") ? 10
-          : d.systemTags?.includes("24-hours-ago") ? 15
-          : 30 + Math.random() * 30;
-        const delay = -(Math.random() * dur);
-        return `${name} ${dur.toFixed(1)}s ease-in-out ${delay.toFixed(2)}s infinite`;
-      })
       .style("transition", "opacity 0.2s, stroke 0.2s, stroke-width 0.2s");
 
     node
