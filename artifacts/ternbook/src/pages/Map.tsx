@@ -62,6 +62,22 @@ export default function Map() {
 
     svg.selectAll("*").remove(); // Clear previous
 
+    svg
+      .append("defs")
+      .append("style")
+      .text(`
+        @keyframes pulse-verified  { 0%,100%{filter:drop-shadow(0 0 2px #6abf6a)} 50%{filter:drop-shadow(0 0 9px #6abf6a)} }
+        @keyframes pulse-connected { 0%,100%{filter:drop-shadow(0 0 2px #7a7abf)} 50%{filter:drop-shadow(0 0 9px #7a7abf)} }
+        @keyframes pulse-mutual    { 0%,100%{filter:drop-shadow(0 0 2px #bf9a6a)} 50%{filter:drop-shadow(0 0 9px #bf9a6a)} }
+        @keyframes pulse-fresh     { 0%,100%{filter:drop-shadow(0 0 2px #6abfaa)} 50%{filter:drop-shadow(0 0 9px #6abfaa)} }
+        @keyframes pulse-default   { 0%,100%{opacity:0.5} 50%{opacity:1} }
+        .node-verified  { animation-name: pulse-verified;  animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
+        .node-connected { animation-name: pulse-connected; animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
+        .node-mutual    { animation-name: pulse-mutual;    animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
+        .node-fresh     { animation-name: pulse-fresh;     animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
+        .node-default   { animation-name: pulse-default;   animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
+      `);
+
     const g = svg.append("g");
 
     const zoom = d3
@@ -165,10 +181,28 @@ export default function Map() {
       .attr("fill", nodeColor)
       .attr("stroke", nodeStroke)
       .attr("stroke-width", 1.5)
-      .style(
-        "transition",
-        "opacity 0.2s, stroke 0.2s, stroke-width 0.2s, filter 0.2s",
-      );
+      .attr("class", (d: any) => {
+        if (d.systemTags?.includes("verified")) return "node-verified";
+        if (d.systemTags?.includes("highly-connected")) return "node-connected";
+        if (d.systemTags?.includes("mutual-ring")) return "node-mutual";
+        if (d.systemTags?.includes("fresh")) return "node-fresh";
+        return "node-default";
+      })
+      .style("animation-duration", (d: any) => {
+        if (d.systemTags?.includes("just-updated")) return "5s";
+        if (d.systemTags?.includes("12-hours-ago")) return "10s";
+        if (d.systemTags?.includes("24-hours-ago")) return "15s";
+        const rand = 30 + Math.random() * 30;
+        return `${rand.toFixed(1)}s`;
+      })
+      .style("animation-delay", (d: any) => {
+        const dur = d.systemTags?.includes("just-updated") ? 5
+          : d.systemTags?.includes("12-hours-ago") ? 10
+          : d.systemTags?.includes("24-hours-ago") ? 15
+          : 30 + Math.random() * 30;
+        return `-${(Math.random() * dur).toFixed(2)}s`;
+      })
+      .style("transition", "opacity 0.2s, stroke 0.2s, stroke-width 0.2s");
 
     node
       .append("text")
@@ -307,7 +341,7 @@ export default function Map() {
           ?.selectAll("circle")
           .style("stroke", nodeStroke)
           .style("stroke-width", 1.5)
-          .style("filter", "none");
+          .style("filter", null);
       }, 3000);
     }
   };
