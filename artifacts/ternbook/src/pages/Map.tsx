@@ -70,12 +70,12 @@ export default function Map() {
         @keyframes pulse-connected { 0%,100%{filter:drop-shadow(0 0 2px #7a7abf)} 50%{filter:drop-shadow(0 0 9px #7a7abf)} }
         @keyframes pulse-mutual    { 0%,100%{filter:drop-shadow(0 0 2px #bf9a6a)} 50%{filter:drop-shadow(0 0 9px #bf9a6a)} }
         @keyframes pulse-fresh     { 0%,100%{filter:drop-shadow(0 0 2px #6abfaa)} 50%{filter:drop-shadow(0 0 9px #6abfaa)} }
-        @keyframes pulse-default   { 0%,100%{opacity:0.55} 50%{opacity:1} }
-        .node-verified  { animation: pulse-verified  2s   ease-in-out infinite; }
-        .node-connected { animation: pulse-connected 2.5s ease-in-out infinite; }
-        .node-mutual    { animation: pulse-mutual    3s   ease-in-out infinite; }
-        .node-fresh     { animation: pulse-fresh     1.5s ease-in-out infinite; }
-        .node-default   { animation: pulse-default   4s   ease-in-out infinite; }
+        @keyframes pulse-default   { 0%,100%{opacity:0.5} 50%{opacity:1} }
+        .node-verified  { animation-name: pulse-verified;  animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
+        .node-connected { animation-name: pulse-connected; animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
+        .node-mutual    { animation-name: pulse-mutual;    animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
+        .node-fresh     { animation-name: pulse-fresh;     animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
+        .node-default   { animation-name: pulse-default;   animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
       `);
 
     const g = svg.append("g");
@@ -187,6 +187,20 @@ export default function Map() {
         if (d.systemTags?.includes("mutual-ring")) return "node-mutual";
         if (d.systemTags?.includes("fresh")) return "node-fresh";
         return "node-default";
+      })
+      .style("animation-duration", (d: any) => {
+        if (d.systemTags?.includes("just-updated")) return "5s";
+        if (d.systemTags?.includes("12-hours-ago")) return "10s";
+        if (d.systemTags?.includes("24-hours-ago")) return "15s";
+        const rand = 30 + Math.random() * 30;
+        return `${rand.toFixed(1)}s`;
+      })
+      .style("animation-delay", (d: any) => {
+        const dur = d.systemTags?.includes("just-updated") ? 5
+          : d.systemTags?.includes("12-hours-ago") ? 10
+          : d.systemTags?.includes("24-hours-ago") ? 15
+          : 30 + Math.random() * 30;
+        return `-${(Math.random() * dur).toFixed(2)}s`;
       })
       .style("transition", "opacity 0.2s, stroke 0.2s, stroke-width 0.2s");
 
