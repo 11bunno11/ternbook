@@ -42,7 +42,7 @@ Sites call this to register or renew. The server fetches and
 
 - DNS resolution + private IP rejection (SSRF guard)
 - Rate limit: one heartbeat per site per 12 hours (exceptions.json override)
-- IAL (Identity Assurance Layer) token rotation per epoch
+- IAL (I Am aLive) token rotation per epoch
 - Genesis Lineage Lock prevents token squatting
 - Blacklist check → 403
 
