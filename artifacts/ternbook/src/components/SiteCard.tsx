@@ -1,8 +1,14 @@
+import { useState } from "react";
 import type { Site } from "@workspace/api-client-react";
+
+const DESC_LIMIT = 60;
 
 export function SiteCard({ site }: { site: Site }) {
   const mutualCount = (site.mutuals || []).length;
   const neighborsCount = (site.neighbors || []).length;
+  const desc = site.description || "";
+  const isLong = desc.length > DESC_LIMIT;
+  const [expanded, setExpanded] = useState(false);
 
   return (
     <div className="border border-card-border p-4 bg-card hover:border-muted-foreground/30 transition-colors">
@@ -17,7 +23,15 @@ export function SiteCard({ site }: { site: Site }) {
         </a>
       </h2>
       <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
-        {site.description || ""}
+        {isLong && !expanded ? desc.slice(0, DESC_LIMIT).trimEnd() + "…" : desc}
+        {isLong && (
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className="ml-1.5 text-[0.65rem] text-[#555] hover:text-[#aaa] transition-colors cursor-pointer"
+          >
+            {expanded ? "show less" : "show more"}
+          </button>
+        )}
       </p>
       
       <div className="flex flex-wrap gap-1.5 mb-3">
