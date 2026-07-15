@@ -13,8 +13,8 @@ a heartbeat to register. Multiple instances can federate with each other via a g
 | **GET** |	`/api/healthz` |	Health check |
 | **GET** |	`/api/sites` |	Paginated site listing with tag filtering |
 | **GET**	| `/api/tags` |	All valid tags (core content, vibe, system) |
-| **GET**	|	`/api/search` |	Full-text search with query syntax |
-| **GET**	|	`/api/random` |	Random site for discovery ("Wander") |
+| **GET**	|	`/api/search?q=` |	Full-text search with query syntax |
+| **GET**	|	`/api/random(?tag=)` |	Random site for discovery ("Wander") |
 | **GET**	|	`/api/map` |	Graph nodes + links for D3 visualization |
 | **POST**	|	`/api/heartbeat` |	Site registration / renewal |
 | **GET**	|	`/api/gossip/send` |	Pull recent-heartbeat bundle (for other instances) |
