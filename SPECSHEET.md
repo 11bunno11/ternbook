@@ -96,7 +96,7 @@ Sites call this to register or renew. The server fetches and
 | `ternbook.config.json`	| Inactivity thresholds, unverified visibility, and request-time logging |
 | `requesttimes.txt`	| Append-only log of heartbeat requests when PingLog is enabled |
 
-### `ternbook.config.json`
+## ternbook.config.json:
 
 ```json
 {
