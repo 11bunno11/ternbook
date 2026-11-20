@@ -63,6 +63,7 @@ Sites call this to register or renew. The server fetches and
 | `registeredAt` |	timestamp	|	Immutable — first registration |
 | `genesisEpoch` |	integer	|	Epoch at first registration |
 | `sourceInstance` |	text	|	Which federated instance introduced the site |
+| `ping_verification_used` |	boolean	|	Whether the website has used their extra ping or not |
 
 ## Search Syntax (GET `/api/search?q=...`)
 
