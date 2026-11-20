@@ -77,16 +77,20 @@ export interface TagGroups {
 
 export interface HeartbeatInput {
   url: string;
-  name: string;
-  description: string;
-  ial: string;
-  tags?: string[];
-  neighbors?: string[];
 }
 
 export interface HeartbeatResponse {
   ok: boolean;
-  site: Site;
+  url: string;
+  /**
+   * Local IAL for registration, or null for a trusted gossip-imported site
+   * @nullable
+   */
+  ial?: string | null;
+  /** @nullable */
+  prevIal?: string | null;
+  epoch?: number;
+  ialVerified: boolean;
 }
 
 export interface ApiError {

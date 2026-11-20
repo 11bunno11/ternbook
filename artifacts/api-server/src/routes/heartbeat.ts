@@ -11,9 +11,11 @@ import { getUserTags } from "../tags.js";
 import { currentEpoch } from "../lib/epoch.js";
 import { invalidateGraphCache } from "../lib/enrichSites.js";
 import { isBlacklisted } from "../lib/blacklist.js";
+import { TERNBOOK_CONFIG } from "../lib/ternbookConfig.js";
 
 const router: IRouter = Router();
 const RATE_LIMIT_MS = 12 * 60 * 60 * 1000;
+const FAST_VERIFICATION_WINDOW_MS = 5 * 60 * 1000;
 const EXCEPTIONS_PATH = path.join(process.cwd(), "../../exceptions.json");
 const MAX_NEIGHBORS = parseInt(process.env.MAX_NEIGHBORS ?? "64", 10);
 const IAL_HEX_LENGTH = 64; // HMAC-SHA256 hex output
@@ -240,20 +242,35 @@ router.post("/heartbeat", async (req, res) => {
 
   const exceptions = loadExceptions();
   const isExempt = exceptions.includes(normalizedUrl);
+  const heartbeatAt = new Date();
 
-  if (!isExempt) {
-    const [existing] = await db
-      .select({ lastSeen: sitesTable.lastSeen })
-      .from(sitesTable)
-      .where(eq(sitesTable.url, normalizedUrl));
+  const [currentSite] = await db
+    .select({
+      registeredAt: sitesTable.registeredAt,
+      lastSeen: sitesTable.lastSeen,
+      ial: sitesTable.ial,
+      ialVerified: sitesTable.ialVerified,
+      verificationPingUsed: sitesTable.verificationPingUsed,
+      sourceInstance: sitesTable.sourceInstance,
+      genesisEpoch: sitesTable.genesisEpoch,
+    })
+    .from(sitesTable)
+    .where(eq(sitesTable.url, normalizedUrl));
 
-    if (existing?.lastSeen) {
-      const elapsed = Date.now() - existing.lastSeen.getTime();
-      if (elapsed < RATE_LIMIT_MS) {
-        const retryAfterMins = Math.ceil((RATE_LIMIT_MS - elapsed) / 60000);
-        res.status(429).json({ error: "rate limited", retryAfterMinutes: retryAfterMins });
-        return;
-      }
+  const canFastVerify =
+    currentSite !== undefined &&
+    !currentSite.ialVerified &&
+    !currentSite.verificationPingUsed &&
+    currentSite.lastSeen !== null &&
+    heartbeatAt.getTime() - currentSite.registeredAt.getTime() <= FAST_VERIFICATION_WINDOW_MS &&
+    heartbeatAt.getTime() - currentSite.lastSeen.getTime() <= FAST_VERIFICATION_WINDOW_MS;
+
+  if (!isExempt && currentSite?.lastSeen) {
+    const elapsed = heartbeatAt.getTime() - currentSite.lastSeen.getTime();
+    if (elapsed < RATE_LIMIT_MS && !canFastVerify) {
+      const retryAfterMins = Math.ceil((RATE_LIMIT_MS - elapsed) / 60000);
+      res.status(429).json({ error: "rate limited", retryAfterMinutes: retryAfterMins });
+      return;
     }
   }
 
@@ -273,26 +290,22 @@ router.post("/heartbeat", async (req, res) => {
     return;
   }
 
-  const [currentSite] = await db
-    .select({ registeredAt: sitesTable.registeredAt, ial: sitesTable.ial, genesisEpoch: sitesTable.genesisEpoch })
-    .from(sitesTable)
-    .where(eq(sitesTable.url, normalizedUrl));
-
-  const registeredAt = currentSite?.registeredAt ?? new Date();
+  const isTrustedExternal = Boolean(currentSite?.sourceInstance && currentSite.ialVerified);
+  const registeredAt = currentSite?.registeredAt ?? heartbeatAt;
   const epoch = currentEpoch();
-  const ial     = generateIAL(normalizedUrl, registeredAt, epoch);
-  const prevIal = generateIAL(normalizedUrl, registeredAt, epoch - 1);
+  const ial = isTrustedExternal ? null : generateIAL(normalizedUrl, registeredAt, epoch);
+  const prevIal = isTrustedExternal ? null : generateIAL(normalizedUrl, registeredAt, epoch - 1);
 
   const sentIAL = (data.ial as string) ?? null;
-  if (sentIAL && sentIAL !== ial && sentIAL !== prevIal) {
+  if (!isTrustedExternal && sentIAL && sentIAL !== ial && sentIAL !== prevIal) {
     res.status(403).json({ error: "ial code mismatch — your ial may be from a previous epoch, use the prevIal value from your last heartbeat response to update it" });
     return;
   }
-  const ialVerified = sentIAL === ial || sentIAL === prevIal;
+  const ialVerified = isTrustedExternal || sentIAL === ial || sentIAL === prevIal;
 
   // Genesis Lineage Lock: existing site — check if its current IAL collides with a
   // *newer* site's stored IAL. An old site cannot crowd out a newer site's identity.
-  if (currentSite !== undefined) {
+  if (currentSite !== undefined && ial !== null) {
     const [newerConflict] = await db
       .select({ url: sitesTable.url })
       .from(sitesTable)
@@ -309,7 +322,7 @@ router.post("/heartbeat", async (req, res) => {
   }
 
   // New site — check for any IAL collision; Genesis Lineage Lock decides the error message.
-  if (currentSite === undefined) {
+  if (currentSite === undefined && ial !== null) {
     const [ialConflict] = await db
       .select({ url: sitesTable.url, genesisEpoch: sitesTable.genesisEpoch })
       .from(sitesTable)
@@ -337,8 +350,9 @@ router.post("/heartbeat", async (req, res) => {
       neighbors: (data.neighbors as string[]) ?? null,
       ial,
       ialVerified,
+      verificationPingUsed: currentSite !== undefined,
       mapStatus: (data.map as string) ?? null,
-      lastSeen: new Date(),
+      lastSeen: heartbeatAt,
       registeredAt,
       genesisEpoch: epoch,
     })
@@ -351,19 +365,22 @@ router.post("/heartbeat", async (req, res) => {
         neighbors: (data.neighbors as string[]) ?? null,
         ial,
         ialVerified,
+        verificationPingUsed: true,
         mapStatus: (data.map as string) ?? null,
-        lastSeen: new Date(),
+        lastSeen: heartbeatAt,
         // genesisEpoch intentionally excluded — immutable after first registration
       },
     });
 
   invalidateGraphCache();
 
-  const timestamp = new Date().toISOString().replace("T", " ").slice(0, 19);
-  fs.appendFileSync(
-    path.join(process.cwd(), "../../requesttimes.txt"),
-    `crawl requested on ${timestamp} for ${normalizedUrl}\n`
-  );
+  if (TERNBOOK_CONFIG.PingLog === "Enable") {
+    const timestamp = heartbeatAt.toISOString().replace("T", " ").slice(0, 19);
+    fs.appendFileSync(
+      path.join(process.cwd(), "../../requesttimes.txt"),
+      `crawl requested on ${timestamp} for ${normalizedUrl}\n`,
+    );
+  }
 
   res.json({ ok: true, url: normalizedUrl, ial, prevIal, epoch, ialVerified });
 });

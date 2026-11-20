@@ -8,9 +8,4 @@
 
 export interface HeartbeatInput {
   url: string;
-  name: string;
-  description: string;
-  ial: string;
-  tags?: string[];
-  neighbors?: string[];
 }

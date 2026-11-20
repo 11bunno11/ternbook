@@ -7,6 +7,7 @@ import router from "./routes";
 import { logger } from "./lib/logger";
 import { startGossipScheduler } from "./lib/gossipScheduler";
 import { startGraphCacheRefresh } from "./lib/enrichSites";
+import { startInactivityScheduler } from "./lib/inactivityScheduler";
 
 const app: Express = express();
 
@@ -37,6 +38,7 @@ app.use("/api", router);
 
 startGossipScheduler();
 startGraphCacheRefresh();
+startInactivityScheduler();
 
 if (process.env.NODE_ENV === "production") {
   const publicDir = path.resolve(import.meta.dirname, "public");

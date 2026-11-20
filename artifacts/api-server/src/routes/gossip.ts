@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { sitesTable } from "@workspace/db/schema";
-import { gte, sql } from "drizzle-orm";
+import { and, eq, gte, sql } from "drizzle-orm";
 import fs from "fs";
 import path from "path";
 import { currentEpoch } from "../lib/epoch.js";
@@ -31,7 +31,7 @@ async function buildBundle() {
   const sites = await db
     .select({ url: sitesTable.url, lastSeen: sitesTable.lastSeen })
     .from(sitesTable)
-    .where(gte(sitesTable.lastSeen, since));
+    .where(and(gte(sitesTable.lastSeen, since), eq(sitesTable.ialVerified, true)));
 
   const epoch = currentEpoch();
   return {
@@ -43,6 +43,7 @@ async function buildBundle() {
       url: s.url,
       last_heartbeat_at: s.lastSeen?.toISOString() ?? null,
       observed_epoch: epoch,
+      system_tags: ["verified"],
     })),
   };
 }
@@ -92,9 +93,13 @@ router.post("/gossip/receive", async (req, res) => {
 
   for (const entry of sites) {
     if (!entry || typeof entry !== "object") continue;
-    const { url, last_heartbeat_at } = entry as Record<string, unknown>;
+    const { url, last_heartbeat_at, system_tags } = entry as Record<string, unknown>;
 
     if (typeof url !== "string") continue;
+    if (!Array.isArray(system_tags) || !system_tags.includes("verified")) {
+      skipped++;
+      continue;
+    }
 
     const normalizedUrl = url.replace(/\/+$/, "");
     if (blacklist.has(normalizedUrl)) { skipped++; continue; }
@@ -117,12 +122,18 @@ router.post("/gossip/receive", async (req, res) => {
         url: normalizedUrl,
         name: hostname,
         lastSeen,
+        ial: null,
+        ialVerified: true,
+        verificationPingUsed: true,
         sourceInstance: origin,
       })
       .onConflictDoUpdate({
         target: sitesTable.url,
         set: {
           lastSeen,
+          ial: null,
+          ialVerified: true,
+          verificationPingUsed: true,
           sourceInstance: origin,
         },
         setWhere: sql`${sitesTable.sourceInstance} IS NOT NULL`,

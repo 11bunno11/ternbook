@@ -5,9 +5,17 @@
  * ternbook API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { Site } from "./site";
 
 export interface HeartbeatResponse {
   ok: boolean;
-  site: Site;
+  url: string;
+  /**
+   * Local IAL for registration, or null for a trusted gossip-imported site
+   * @nullable
+   */
+  ial?: string | null;
+  /** @nullable */
+  prevIal?: string | null;
+  epoch?: number;
+  ialVerified: boolean;
 }
