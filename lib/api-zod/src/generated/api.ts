@@ -135,27 +135,19 @@ export const GetTagsResponse = zod.object({
  * @summary Register or update a site
  */
 export const HeartbeatBody = zod.object({
-  url: zod.string(),
-  name: zod.string(),
-  description: zod.string(),
-  ial: zod.string(),
-  tags: zod.array(zod.string()).optional(),
-  neighbors: zod.array(zod.string()).optional(),
+  url: zod.string().url(),
 });
 
 export const HeartbeatResponse = zod.object({
   ok: zod.boolean(),
-  site: zod.object({
-    id: zod.number(),
-    url: zod.string(),
-    name: zod.string(),
-    description: zod.string(),
-    tags: zod.array(zod.string()),
-    systemTags: zod.array(zod.string()),
-    neighbors: zod.array(zod.string()),
-    mutuals: zod.array(zod.string()),
-    ialVerified: zod.boolean(),
-    registeredAt: zod.coerce.date(),
-    lastSeen: zod.coerce.date(),
-  }),
+  url: zod.string().url(),
+  ial: zod
+    .string()
+    .nullish()
+    .describe(
+      "Local IAL for registration, or null for a trusted gossip-imported site",
+    ),
+  prevIal: zod.string().nullish(),
+  epoch: zod.number().optional(),
+  ialVerified: zod.boolean(),
 });

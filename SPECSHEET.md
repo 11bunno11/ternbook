@@ -41,10 +41,11 @@ Sites call this to register or renew. The server fetches and
 ## Protections on heartbeat:
 
 - DNS resolution + private IP rejection (SSRF guard)
-- Rate limit: one heartbeat per site per 12 hours (exceptions.json override)
+- Rate limit: one heartbeat per site per 12 hours (exceptions.json override); one extra verification heartbeat is allowed within five minutes of a new registration
 - IAL (I Am aLive) token rotation per epoch
 - Genesis Lineage Lock prevents token squatting
 - Blacklist check → 403
+- Verified sites received through gossip remain verified without storing a local IAL
 
 ## Database Schema (sites table)
 
@@ -82,8 +83,8 @@ Sites call this to register or renew. The server fetches and
 
 ## Federation (Gossip Protocol)
 - Instances declare peers in `gossip.json` (send / receive lists)
-- `GET /gossip/send` returns sites active in the last 6 hours
-- `POST /gossip/receive` ingests a bundle — only from whitelisted origins
+- `GET /gossip/send` returns verified sites active in the last 6 hours
+- `POST /gossip/receive` ingests verified sites from whitelisted origins; imported sites have no local IAL
 - Blacklisted URLs are silently dropped during gossip ingestion
 
 ## Config Files (repo root)
@@ -92,7 +93,21 @@ Sites call this to register or renew. The server fetches and
 | `blacklist.json`	| URLs banned from registering or being gossiped in |
 | `exceptions.json`	| URLs exempt from the 12-hour heartbeat rate limit |
 | `gossip.json`	| Federation peer lists (send + receive) |
-| `requesttimes.txt`	| Append-only log of every heartbeat request |
+| `ternbook.config.json`	| Inactivity thresholds, unverified visibility, and request-time logging |
+| `requesttimes.txt`	| Append-only log of heartbeat requests when PingLog is enabled |
+
+### `ternbook.config.json`
+
+```json
+{
+  "InactivityGhost": ["90", "days"],
+  "InactivityDelete": ["3", "years"],
+  "UnverifiedHide": ["14", "days"],
+  "PingLog": "Enable"
+}
+```
+
+Time units are `hours`, `days`, `months`, or `years`. `PingLog` accepts `Enable` or `Disable`. Inactive sites are checked for deletion hourly; hidden unverified sites remain searchable. Restart the API after changing this file.
 
 ## Deployment
 - **Single process in production** — Express serves the Vite-built frontend as static files + a SPA catch-all, plus all API routes

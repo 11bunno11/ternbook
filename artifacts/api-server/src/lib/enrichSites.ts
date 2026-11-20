@@ -2,6 +2,7 @@ import { db } from "@workspace/db";
 import { sitesTable, type Site } from "@workspace/db/schema";
 import { computeStructuralTags, computeDynamicTags } from "../tags.js";
 import { logger } from "./logger.js";
+import { hasDurationElapsed, TERNBOOK_CONFIG } from "./ternbookConfig.js";
 
 // ---------------------------------------------------------------------------
 // Graph cache — structural tags recomputed every 30 minutes (or on demand).
@@ -9,7 +10,6 @@ import { logger } from "./logger.js";
 // ---------------------------------------------------------------------------
 
 const CACHE_TTL_MS = 30 * 60 * 1000;
-const UNVERIFIED_HIDE_MS = 7 * 24 * 60 * 60 * 1000;
 
 interface CachedEntry {
   site: Site;
@@ -96,12 +96,13 @@ export async function fetchEnrichedSites() {
   const now = new Date();
 
   const enriched = entries.map(({ site, mutuals, structuralTags }) => {
-    const age = now.getTime() - (site.registeredAt?.getTime() ?? 0);
-    const isHidden = !site.ialVerified && age > UNVERIFIED_HIDE_MS;
+    const isHidden =
+      !site.ialVerified &&
+      hasDurationElapsed(site.registeredAt, TERNBOOK_CONFIG.UnverifiedHide, now);
     return {
       ...site,
       mutuals,
-      systemTags: [...structuralTags, ...computeDynamicTags(site, now)],
+      systemTags: [...structuralTags, ...computeDynamicTags(site, now, TERNBOOK_CONFIG)],
       isHidden,
     };
   });

@@ -1,0 +1,6 @@
+{
+  "InactivityGhost": ["90", "days"],
+  "InactivityDelete": ["3", "years"],
+  "UnverifiedHide": ["14", "days"],
+  "PingLog": "Enable"
+}

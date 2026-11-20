@@ -172,6 +172,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "429":
+          description: Heartbeat rate limit has not elapsed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "422":
+          description: Site metadata could not be fetched or validated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
 
 components:
   schemas:
@@ -333,33 +345,30 @@ components:
 
     HeartbeatInput:
       type: object
-      required: [url, name, description, ial]
+      required: [url]
       properties:
         url:
           type: string
-        name:
-          type: string
-        description:
-          type: string
-        ial:
-          type: string
-        tags:
-          type: array
-          items:
-            type: string
-        neighbors:
-          type: array
-          items:
-            type: string
+          format: uri
 
     HeartbeatResponse:
       type: object
-      required: [ok, site]
+      required: [ok, url, ialVerified]
       properties:
         ok:
           type: boolean
-        site:
-          $ref: "#/components/schemas/Site"
+        url:
+          type: string
+          format: uri
+        ial:
+          type: ["string", "null"]
+          description: Local IAL for registration, or null for a trusted gossip-imported site
+        prevIal:
+          type: ["string", "null"]
+        epoch:
+          type: integer
+        ialVerified:
+          type: boolean
 
     ApiError:
       type: object

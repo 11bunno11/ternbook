@@ -1,6 +1,7 @@
 import type { Site } from "@workspace/db/schema";
 import fs from "fs";
 import path from "path";
+import { hasDurationElapsed, TERNBOOK_CONFIG, type TernbookConfig } from "./lib/ternbookConfig.js";
 
 const TAGS_PATH = path.join(process.cwd(), "../../tags.json");
 
@@ -36,7 +37,6 @@ export const SYSTEM_TAGS = new Set([
 
 const FRESH_MS        = 7   * 24 * 60 * 60 * 1000;
 const ANCIENT_MS      = 365 * 24 * 60 * 60 * 1000;
-const GHOST_MS        = 90  * 24 * 60 * 60 * 1000;
 const ONE_HOUR_MS     = 1   * 60 * 60 * 1000;
 const TWELVE_HOURS_MS = 12  * 60 * 60 * 1000;
 const TWENTY_FOUR_MS  = 24  * 60 * 60 * 1000;
@@ -87,7 +87,11 @@ export function computeStructuralTags(
  * Dynamic tags depend only on per-site attributes and wall-clock time.
  * Computed fresh on every read — cheap, no graph traversal.
  */
-export function computeDynamicTags(site: Site, now: Date): string[] {
+export function computeDynamicTags(
+  site: Site,
+  now: Date,
+  config: TernbookConfig = TERNBOOK_CONFIG,
+): string[] {
   const tags: string[] = [];
   const age = now.getTime() - (site.registeredAt?.getTime() ?? now.getTime());
 
@@ -101,8 +105,9 @@ export function computeDynamicTags(site: Site, now: Date): string[] {
   if (site.ialVerified)     tags.push("verified");
   if (age < FRESH_MS)       tags.push("fresh");
   if (age > ANCIENT_MS)     tags.push("ancient");
-  if (!site.lastSeen || now.getTime() - site.lastSeen.getTime() > GHOST_MS)
-                            tags.push("ghostsite");
+  if (hasDurationElapsed(site.lastSeen ?? site.registeredAt, config.InactivityGhost, now)) {
+    tags.push("ghostsite");
+  }
 
   return tags;
 }
@@ -113,9 +118,10 @@ export function computeSystemTags(
   inboundMap: Map<string, string[]>,
   neighborSets: Map<string, Set<string>>,
   now: Date,
+  config: TernbookConfig = TERNBOOK_CONFIG,
 ): string[] {
   return [
     ...computeStructuralTags(site, inboundMap, neighborSets),
-    ...computeDynamicTags(site, now),
+    ...computeDynamicTags(site, now, config),
   ];
 }

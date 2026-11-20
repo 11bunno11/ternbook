@@ -6,3 +6,4 @@ export type {
 
 // 2. Export all the Zod validation schemas and everything else from the generated file
 export * from "./generated/api";
+export * from "./generated/types";

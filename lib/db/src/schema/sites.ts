@@ -8,6 +8,7 @@ export const sitesTable = pgTable("sites", {
   neighbors: text("neighbors").array(),
   ial: text("ial"),
   ialVerified: boolean("ial_verified").default(false).notNull(),
+  verificationPingUsed: boolean("verification_ping_used").default(false).notNull(),
   mapStatus: text("map_status"),
   lastSeen: timestamp("last_seen", { withTimezone: true }),
   registeredAt: timestamp("registered_at", { withTimezone: true }).defaultNow().notNull(),
